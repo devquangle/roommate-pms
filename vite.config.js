@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // Để base='./' để build ra các file có đường dẫn tương đối, tiện cho việc deploy GitHub Pages
-  base: './',
+  // base='/' cho History API routing (URL sạch, không hash)
+  base: '/',
   server: {
-    port: 3000,
+    port: 5173,
     open: true
   },
   build: {

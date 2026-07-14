@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting...</title>
+  <script>
+    // GitHub Pages không hỗ trợ SPA routing natively.
+    // File 404.html này chuyển path thành query string rồi redirect về index.html,
+    // index.html sẽ đọc query string và dùng replaceState để khôi phục URL gốc.
+    // Tham khảo: https://github.com/rafgraph/spa-github-pages
+    var pathSegmentsToKeep = 0; // 0 nếu deploy ở root, 1 nếu deploy ở /<repo-name>
+    var l = window.location;
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+      (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+      l.hash
+    );
+  </script>
+</head>
+<body>
+</body>
+</html>

@@ -1,27 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RoomMate - Quản lý trọ</title>
-  <!-- Bootstrap 5 CSS CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="/src/styles/main.css">
-</head>
-<body>
-  <!-- Bố cục Layout chính sẽ được render bởi component -->
-  <div id="app-root"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RoomMate - Quản lý trọ</title>
+    <!-- Bootstrap 5 CSS CDN -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/src/styles/main.css" />
+    <!-- GitHub Pages SPA redirect receiver -->
+    <script>
+      (function(l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search.slice(1).split('&').map(function(s) {
+            return s.replace(/~and~/g, '&');
+          }).join('?');
+          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+        }
+      }(window.location));
+    </script>
+  </head>
+  <body>
+    <!-- Bố cục Layout chính sẽ được render bởi component -->
+    <div id="app-root"></div>
 
-  <!-- Toast Container -->
-  <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" data-testid="toast-container"></div>
+    <!-- Toast Container -->
+    <div
+      id="toast-container"
+      class="toast-container position-fixed top-0 end-0 p-3"
+      data-testid="toast-container"
+    ></div>
 
-  <!-- Confirm Dialog Container -->
-  <div id="confirm-dialog-container"></div>
+    <!-- Confirm Dialog Container -->
+    <div id="confirm-dialog-container"></div>
 
-  <!-- Bootstrap 5 JS CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-  <!-- Main JS -->
-  <script type="module" src="/src/main.js"></script>
-</body>
+    <!-- Bootstrap 5 JS CDN -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+    <!-- Main JS -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>

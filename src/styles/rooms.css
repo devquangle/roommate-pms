@@ -1,0 +1,41 @@
+/* src/styles/rooms.css */
+
+/* ─── Badge trạng thái phòng ─────────────────────────────────── */
+.badge-room-available {
+  background-color: #198754;
+  color: #fff;
+}
+
+.badge-room-rented {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.badge-room-maintenance {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+/* ─── Card thông tin chi tiết phòng ─────────────────────────── */
+.room-detail-panel {
+  border-left: 4px solid #0d6efd;
+}
+
+.room-stat-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.room-stat-value {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* ─── CSS Validation Errors ──────────────────────────────────── */
+.room-form .invalid-feedback-custom {
+  font-size: 0.75rem;
+  color: #dc3545;
+  margin-top: 0.25rem;
+  display: block;
+}

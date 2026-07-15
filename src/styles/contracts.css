@@ -1,0 +1,135 @@
+/* src/styles/contracts.css */
+
+/* ─── Badge trạng thái hợp đồng ─────────────────────────────── */
+.badge-contract-active {
+  background-color: #198754;
+  color: #fff;
+}
+.badge-contract-expired {
+  background-color: #6c757d;
+  color: #fff;
+}
+.badge-contract-terminated {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+/* ─── Card cảnh báo sắp hết hạn ─────────────────────────────── */
+.expiring-alert {
+  border-left: 4px solid #ffc107;
+  background-color: #fff8e1;
+}
+.expiring-alert .badge {
+  font-size: 0.75rem;
+}
+
+/* ─── Bảng hợp đồng ─────────────────────────────────────────── */
+.contracts-table th {
+  white-space: nowrap;
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+.contracts-table td {
+  vertical-align: middle;
+  font-size: 0.875rem;
+}
+.contracts-table .btn-group .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* ─── Hàng hợp đồng sắp hết hạn ─────────────────────────────── */
+.contracts-table tr.row-expiring {
+  background-color: #fff3cd;
+}
+
+/* ─── Filter bar ────────────────────────────────────────────── */
+.contracts-filter-bar {
+  gap: 0.5rem;
+}
+.contracts-filter-bar .form-select,
+.contracts-filter-bar .form-control {
+  max-width: 220px;
+}
+
+/* ─── Chi tiết hợp đồng ─────────────────────────────────────── */
+.contract-detail-section {
+  border-left: 3px solid #0d6efd;
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+}
+.contract-detail-section h6 {
+  color: #0d6efd;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+.contract-detail-section .detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.contract-detail-section .detail-row:last-child {
+  border-bottom: none;
+}
+.contract-detail-section .detail-label {
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+.contract-detail-section .detail-value {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* ─── Form hợp đồng ─────────────────────────────────────────── */
+.contract-form .form-label {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+.contract-form .form-text {
+  font-size: 0.75rem;
+}
+
+/* ─── Thành viên (người ở cùng) ──────────────────────────────── */
+.co-tenant-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.co-tenant-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.875rem;
+  background-color: #f8f9fa;
+}
+.co-tenant-list li .btn-remove-co-tenant {
+  padding: 0;
+  line-height: 1;
+  font-size: 1rem;
+  color: #dc3545;
+}
+
+/* ─── Extend modal ───────────────────────────────────────────── */
+.extend-info {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .contracts-filter-bar {
+    flex-direction: column;
+  }
+  .contracts-filter-bar .form-select,
+  .contracts-filter-bar .form-control {
+    max-width: 100%;
+  }
+  .contracts-table {
+    font-size: 0.8rem;
+  }
+}

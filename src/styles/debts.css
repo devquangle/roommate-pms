@@ -1,0 +1,37 @@
+/* src/styles/debts.css */
+
+/* ─── Cảnh báo trễ hạn ───────────────────────────────────────── */
+.text-overdue-days {
+  color: #dc3545;
+  font-weight: 700;
+}
+
+.badge-overdue-tag {
+  background-color: #dc3545;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* ─── Tóm tắt công nợ ────────────────────────────────────────── */
+.debt-summary-val {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #dc3545;
+}
+
+/* ─── Biểu đồ danh sách nợ theo phòng ────────────────────────── */
+.debt-progress-bar {
+  height: 8px;
+  border-radius: 4px;
+  background-color: #e9ecef;
+  overflow: hidden;
+}
+
+.debt-progress-fill {
+  height: 100%;
+  background-color: #dc3545;
+  border-radius: 4px;
+}

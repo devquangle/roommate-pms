@@ -1,0 +1,35 @@
+/* src/styles/tenants.css */
+
+/* ─── Badge trạng thái người thuê ───────────────────────────────── */
+.badge-tenant-active {
+  background-color: #198754;
+  color: #fff;
+}
+
+.badge-tenant-inactive {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+/* ─── Lịch sử thuê phòng (Rental History List) ───────────────────── */
+.rental-history-item {
+  border-left: 3px solid #6c757d;
+  background-color: #f8f9fa;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.rental-history-item.history-active {
+  border-left-color: #198754;
+  background-color: #fdfdfd;
+}
+
+/* ─── Báo lỗi validation ───────────────────────────────────────── */
+.tenant-form .invalid-feedback-custom {
+  font-size: 0.75rem;
+  color: #dc3545;
+  margin-top: 0.25rem;
+  display: block;
+}

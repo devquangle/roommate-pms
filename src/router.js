@@ -7,17 +7,17 @@
  */
 
 // Import tất cả page modules
-import { renderDashboardPage } from './pages/dashboard/index.js';
-import { renderRoomsPage } from './pages/rooms/index.js';
-import { renderTenantsPage } from './pages/tenants/index.js';
-import { renderContractsPage } from './pages/contracts/index.js';
-import { renderMetersPage } from './pages/meters/index.js';
-import { renderServicesPage } from './pages/services/index.js';
-import { renderInvoicesPage } from './pages/invoices/index.js';
-import { renderPaymentsPage } from './pages/payments/index.js';
-import { renderDebtsPage } from './pages/debts/index.js';
-import { renderReportsPage } from './pages/reports/index.js';
-import { renderSettingsPage } from './pages/settings/index.js';
+import { renderDashboardPage } from './pages/dashboard-page.js';
+import { renderRoomsPage } from './pages/rooms-page.js';
+import { renderTenantsPage } from './pages/tenants-page.js';
+import { renderContractsPage } from './pages/contracts-page.js';
+import { renderMetersPage } from './pages/meter-readings-page.js';
+import { renderServicesPage } from './pages/services-page.js';
+import { renderInvoicesPage } from './pages/invoices-page.js';
+import { renderPaymentsPage } from './pages/payments-page.js';
+import { renderDebtsPage } from './pages/debts-page.js';
+import { renderReportsPage } from './pages/reports-page.js';
+import { renderSettingsPage } from './pages/settings-page.js';
 
 /**
  * Bảng định tuyến: mỗi key là path segment,

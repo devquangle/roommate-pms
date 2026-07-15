@@ -1,0 +1,58 @@
+/* src/styles/rooms-card.css */
+
+/* Card container ensures equal height cards */
+.room-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  background-color: #fff;
+}
+
+/* Card body spacing */
+.room-card .card-body {
+  flex: 1 1 auto;
+  padding: 1rem;
+}
+
+/* Card footer with actions */
+.room-card .card-footer {
+  background-color: transparent;
+  border-top: none;
+  padding: 0.5rem 1rem;
+}
+
+/* Status badge styles – override generic badge colors */
+.badge-room-available {
+  background-color: #28a745; /* green */
+  color: #fff;
+}
+.badge-room-rented {
+  background-color: #17a2b8; /* teal */
+  color: #fff;
+}
+.badge-room-maintenance {
+  background-color: #dc3545; /* red */
+  color: #fff;
+}
+
+/* Ensure icons align nicely */
+.room-card i {
+  margin-right: 4px;
+}
+
+/* Responsive spacing for grid */
+@media (min-width: 576px) {
+  .col-sm-6 {
+    max-width: 50%;
+    flex: 0 0 50%;
+  }
+}
+@media (min-width: 1200px) {
+  .col-xl-3 {
+    max-width: 25%;
+    flex: 0 0 25%;
+  }
+}

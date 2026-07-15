@@ -130,11 +130,14 @@ export function getRoomOccupancy(roomId) {
  * Tạo phòng mới.
  *
  * @param {Object} data - Dữ liệu phòng.
- * @param {string} data.name - Mã phòng (bắt buộc, duy nhất).
- * @param {number} data.price - Giá thuê (>= 0).
- * @param {number} data.maxTenants - Số người tối đa (> 0).
- * @param {number} [data.area] - Diện tích.
- * @param {string} [data.description] - Mô tả.
+ * @param {string} data.name        - Mã phòng (bắt buộc, duy nhất).
+ * @param {string} [data.displayName] - Tên hiển thị của phòng.
+ * @param {string} [data.floor]     - Khu vực / tầng.
+ * @param {string} [data.type]      - Loại phòng (standard | deluxe | suite | dormitory | studio).
+ * @param {number} data.price       - Giá thuê (>= 0).
+ * @param {number} data.maxTenants  - Số người tối đa (> 0).
+ * @param {number} [data.area]      - Diện tích (m²).
+ * @param {string} [data.description] - Mô tả / ghi chú.
  * @returns {Object} Phòng vừa tạo.
  * @throws {Error} Nếu dữ liệu không hợp lệ.
  */
@@ -147,12 +150,15 @@ export function createRoom(data) {
   }
 
   const newRoom = {
-    id: generateId('r-'),
-    name: normalizeName(data.name),
-    price: toNumberOrDefault(data.price, 0),
-    area: toNumberOrDefault(data.area, 0),
-    status: ROOM_STATUS.AVAILABLE,
-    maxTenants: toNumberOrDefault(data.maxTenants, 1),
+    id:          generateId('r-'),
+    name:        normalizeName(data.name),
+    displayName: (data.displayName || data.name || '').trim(),
+    floor:       (data.floor       || '').trim(),
+    type:        (data.type        || '').trim(),
+    price:       toNumberOrDefault(data.price, 0),
+    area:        toNumberOrDefault(data.area, 0),
+    status:      data.status || ROOM_STATUS.AVAILABLE,
+    maxTenants:  toNumberOrDefault(data.maxTenants, 1),
     description: (data.description || '').trim(),
   };
 
@@ -192,10 +198,13 @@ export function updateRoom(id, data) {
   }
 
   const changes = {
-    name: normalizeName(data.name),
-    price: toNumberOrDefault(data.price, room.price),
-    area: toNumberOrDefault(data.area, room.area),
-    maxTenants: toNumberOrDefault(data.maxTenants, room.maxTenants),
+    name:        normalizeName(data.name),
+    displayName: data.displayName !== undefined ? data.displayName.trim() : room.displayName,
+    floor:       data.floor       !== undefined ? data.floor.trim()       : room.floor,
+    type:        data.type        !== undefined ? data.type               : room.type,
+    price:       toNumberOrDefault(data.price,      room.price),
+    area:        toNumberOrDefault(data.area,        room.area),
+    maxTenants:  toNumberOrDefault(data.maxTenants,  room.maxTenants),
     description: data.description !== undefined ? data.description.trim() : room.description,
   };
 

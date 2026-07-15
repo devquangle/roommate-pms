@@ -1,0 +1,73 @@
+/* src/styles/invoices.css */
+
+/* ─── Badge trạng thái hóa đơn ───────────────────────────────── */
+.badge-invoice-draft {
+  background-color: #6c757d;
+  color: #fff;
+}
+.badge-invoice-unpaid {
+  background-color: #dc3545;
+  color: #fff;
+}
+.badge-invoice-partial {
+  background-color: #ffc107;
+  color: #212529;
+}
+.badge-invoice-paid {
+  background-color: #198754;
+  color: #fff;
+}
+.badge-invoice-cancelled {
+  background-color: #343a40;
+  color: #fff;
+}
+
+/* ─── Phân bố tóm tắt tài chính ─────────────────────────────── */
+.invoice-summary-card {
+  border-radius: 0.5rem;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* ─── In hóa đơn bằng CSS Print ───────────────────────────────── */
+@media print {
+  /* Ẩn toàn bộ giao diện chính của ứng dụng */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Chỉ hiển thị vùng in hóa đơn */
+  #invoicePrintArea, 
+  #invoicePrintArea * {
+    visibility: visible;
+  }
+  
+  #invoicePrintArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000 !important;
+    background-color: #fff !important;
+    padding: 1.5in !important;
+    font-size: 12pt;
+  }
+
+  /* Ẩn các nút thao tác trong vùng in */
+  #invoicePrintArea button,
+  #invoicePrintArea .modal-footer,
+  #invoicePrintArea .btn-close {
+    display: none !important;
+  }
+}
+
+/* ─── Chi tiết phí dịch vụ ───────────────────────────────────── */
+.invoice-detail-table th {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.invoice-detail-table td {
+  font-size: 0.9rem;
+}

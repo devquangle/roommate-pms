@@ -1,0 +1,73 @@
+/* src/styles/settings.css */
+
+/* ─── Phân vùng cài đặt ──────────────────────────────────────── */
+.settings-card {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  background-color: #fff;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.settings-card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0.75rem 1.25rem;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.settings-card-body {
+  padding: 1.25rem;
+}
+
+/* ─── Thống kê bản ghi ───────────────────────────────────────── */
+.stats-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.stats-item {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stats-label {
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.stats-count {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0d6efd;
+}
+
+/* ─── Cảnh báo hành động nguy hiểm ────────────────────────────── */
+.danger-zone {
+  border-color: #f8d7da;
+}
+
+.danger-zone .settings-card-header {
+  background-color: #f8d7da;
+  color: #842029;
+  border-bottom-color: #f5c2c7;
+}
+
+/* ─── Preview file thông tin ─────────────────────────────────── */
+.file-info-preview {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+}

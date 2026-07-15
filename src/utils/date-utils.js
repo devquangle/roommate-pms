@@ -22,7 +22,7 @@ export function getCurrentISODate() {
  */
 export function formatDateToDisplay(isoString) {
   if (!isoString) {
-    throw new Error('Chuỗi ngày không được để trống.');
+    return '';
   }
   const date = new Date(isoString);
   if (isNaN(date.getTime())) {

@@ -101,25 +101,30 @@ export function filterRooms(filters = {}) {
 
 /**
  * Lấy thông tin số người đang ở trong phòng.
- * Đếm số hợp đồng active trỏ tới roomId.
+ * Đếm số người trong hợp đồng active (1 đại diện + số người ở cùng).
  *
  * @param {string} roomId - ID phòng.
- * @returns {{ room: Object|null, activeContracts: number, maxTenants: number }}
+ * @returns {{ room: Object|null, currentOccupants: number, maxTenants: number }}
  */
 export function getRoomOccupancy(roomId) {
   const room = getRoomById(roomId);
   if (!room) {
-    return { room: null, activeContracts: 0, maxTenants: 0 };
+    return { room: null, currentOccupants: 0, maxTenants: 0 };
   }
 
   const contracts = StorageService.getAll(CONTRACTS_KEY);
-  const activeContracts = contracts.filter(
+  const activeContract = contracts.find(
     c => c.roomId === roomId && c.status === CONTRACT_STATUS.ACTIVE
-  ).length;
+  );
+
+  let currentOccupants = 0;
+  if (activeContract) {
+    currentOccupants = 1 + (activeContract.coTenantIds ? activeContract.coTenantIds.length : 0);
+  }
 
   return {
     room,
-    activeContracts,
+    currentOccupants,
     maxTenants: room.maxTenants || 0,
   };
 }
@@ -130,8 +135,8 @@ export function getRoomOccupancy(roomId) {
  * Tạo phòng mới.
  *
  * @param {Object} data - Dữ liệu phòng.
- * @param {string} data.name        - Mã phòng (bắt buộc, duy nhất).
- * @param {string} [data.displayName] - Tên hiển thị của phòng.
+ * @param {string} data.id          - Mã phòng (bắt buộc, duy nhất).
+ * @param {string} data.name        - Tên phòng (bắt buộc).
  * @param {string} [data.floor]     - Khu vực / tầng.
  * @param {string} [data.type]      - Loại phòng (standard | deluxe | suite | dormitory | studio).
  * @param {number} data.price       - Giá thuê (>= 0).
@@ -150,9 +155,8 @@ export function createRoom(data) {
   }
 
   const newRoom = {
-    id:          generateId('r-'),
-    name:        normalizeName(data.name),
-    displayName: (data.displayName || data.name || '').trim(),
+    id:          normalizeName(data.id),
+    name:        (data.name || '').trim(),
     floor:       (data.floor       || '').trim(),
     type:        (data.type        || '').trim(),
     price:       toNumberOrDefault(data.price, 0),
@@ -198,8 +202,7 @@ export function updateRoom(id, data) {
   }
 
   const changes = {
-    name:        normalizeName(data.name),
-    displayName: data.displayName !== undefined ? data.displayName.trim() : room.displayName,
+    name:        data.name !== undefined ? data.name.trim() : room.name,
     floor:       data.floor       !== undefined ? data.floor.trim()       : room.floor,
     type:        data.type        !== undefined ? data.type               : room.type,
     price:       toNumberOrDefault(data.price,      room.price),

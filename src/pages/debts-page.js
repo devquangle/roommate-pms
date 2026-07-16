@@ -20,6 +20,7 @@ import { getRooms, getRoomById } from '../services/room-service.js';
 import { formatCurrency } from '../utils/currency-utils.js';
 import { formatDateToDisplay } from '../utils/date-utils.js';
 import { openInvoiceDetail } from '../components/invoice-detail.js';
+import { initSearchableSelect } from '../components/searchable-select.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentRoomId = '';
@@ -140,6 +141,8 @@ function populateRoomFilter() {
   const rooms = getRooms();
   const options = rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
   filterRoom.innerHTML = '<option value="">Tất cả phòng</option>' + options;
+
+  initSearchableSelect(filterRoom);
 }
 
 // ─── RENDER DEBTS DETAIL ───────────────────────────────────────

@@ -24,36 +24,58 @@ import { formatDateToDisplay } from '../utils/date-utils.js';
 import { showToast } from '../components/toast.js';
 import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openTenantForm } from '../components/tenant-form.js';
+import { openTenantProfile } from '../components/tenant-profile.js';
+import { renderPagination } from '../components/pagination.js';
+import { getRooms } from '../services/room-service.js';
+import { initSearchableSelect } from '../components/searchable-select.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentKeyword = '';
-let showArchived = false; // Mặc định chỉ hiện khách hàng hoạt động (active)
+let currentStatus = ''; // '' | 'active' | 'inactive'
+let currentRoomId = '';
+let currentPage = 1;
+const ITEMS_PER_PAGE = 8;
 
 export function renderTenantsPage(container) {
   currentKeyword = '';
-  showArchived = false;
+  currentStatus = '';
+  currentRoomId = '';
+  currentPage = 1;
+
+  const rooms = getRooms();
+  const roomOptions = rooms.map(r => `<option value="${r.id}">Phòng ${r.name}</option>`).join('');
 
   container.innerHTML = `
     <div data-testid="tenants-page">
       <!-- Toolbar -->
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <h4 class="mb-0">Quản lý khách thuê</h4>
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+        <div>
+          <h4 class="mb-1">Quản lý người thuê</h4>
+          <p class="text-muted small mb-0">Theo dõi trạng thái và thông tin khách thuê phòng</p>
+        </div>
         <button class="btn btn-primary btn-sm" id="btnAddTenant" data-testid="btn-add-tenant">
-          + Thêm khách thuê
+          <i class="bi bi-person-plus"></i> Thêm người thuê
         </button>
       </div>
 
       <!-- Filters & Search -->
-      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3 bg-light p-2 rounded">
         <!-- Tìm kiếm -->
         <input type="text" class="form-control form-control-sm" style="max-width: 250px;" id="tenantSearch" data-testid="input-search-tenant"
           placeholder="Tìm theo họ tên, SĐT, CCCD..." />
 
-        <!-- Lọc trạng thái lưu trữ -->
-        <div class="form-check form-switch ms-2">
-          <input class="form-check-input" type="checkbox" id="filterArchived" data-testid="filter-archived" />
-          <label class="form-check-label small" for="filterArchived">Hiển thị cả khách đã rời (Lưu trữ)</label>
-        </div>
+        <!-- Lọc trạng thái -->
+        <select class="form-select form-select-sm" style="width: auto;" id="filterStatus" data-testid="filter-status">
+          <option value="">Tất cả trạng thái</option>
+          <option value="active">Đang thuê</option>
+          <option value="inactive">Đã rời đi (Lưu trữ)</option>
+        </select>
+
+        <!-- Lọc phòng -->
+        <select class="form-select form-select-sm" style="width: auto;" id="filterRoom" data-testid="filter-room">
+          <option value="">Tất cả phòng</option>
+          ${roomOptions}
+        </select>
       </div>
 
       <!-- Bảng danh sách người thuê -->
@@ -61,19 +83,21 @@ export function renderTenantsPage(container) {
         <table class="table table-hover align-middle" data-testid="tenants-table">
           <thead class="table-light">
             <tr>
+              <th width="50"></th>
               <th>Họ và tên</th>
               <th>Số điện thoại</th>
-              <th>Số CCCD</th>
-              <th>Email</th>
+              <th>CCCD</th>
               <th>Phòng hiện tại</th>
+              <th>Ngày vào ở</th>
               <th>Trạng thái</th>
-              <th>Thao tác</th>
+              <th class="text-end">Thao tác</th>
             </tr>
           </thead>
           <tbody id="tenantsTableBody" data-testid="tenants-table-body">
           </tbody>
         </table>
       </div>
+      <div id="paginationContainer" class="mt-3"></div>
 
       <div id="tenantsEmpty" class="text-muted text-center d-none p-4" data-testid="tenants-empty">
         Không tìm thấy khách thuê nào.
@@ -83,72 +107,107 @@ export function renderTenantsPage(container) {
 
   renderTenantsList();
   bindEvents();
+
+  const filterRoom = document.getElementById('filterRoom');
+  if (filterRoom) {
+    initSearchableSelect(filterRoom);
+  }
 }
 
 // ─── RENDER LIST ───────────────────────────────────────────────
 
 function getProcessedTenants() {
-  const options = { includeArchived: showArchived };
+  const options = { includeArchived: true };
+  let list = currentKeyword ? searchTenants(currentKeyword, options) : getTenants(options);
 
-  if (currentKeyword) {
-    return searchTenants(currentKeyword, options);
+  if (currentStatus) {
+    list = list.filter(t => t.status === currentStatus);
   }
-  return getTenants(options);
+
+  // Cần lọc theo phòng (dựa vào currentRoom)
+  if (currentRoomId) {
+    list = list.filter(t => {
+      const room = getCurrentRoomOfTenant(t.id);
+      return room && room.room.id === currentRoomId;
+    });
+  }
+
+  // Sắp xếp mặc định theo ngày tạo mới nhất lên đầu
+  list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  return list;
 }
 
 function renderTenantsList() {
   const tbody = document.getElementById('tenantsTableBody');
   const emptyEl = document.getElementById('tenantsEmpty');
+  const paginationContainer = document.getElementById('paginationContainer');
   if (!tbody) return;
 
-  const list = getProcessedTenants();
+  const allList = getProcessedTenants();
 
-  if (list.length === 0) {
+  if (allList.length === 0) {
     tbody.innerHTML = '';
     emptyEl && emptyEl.classList.remove('d-none');
+    if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
 
   emptyEl && emptyEl.classList.add('d-none');
 
+  // Phân trang
+  const totalPages = Math.ceil(allList.length / ITEMS_PER_PAGE) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const list = allList.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   tbody.innerHTML = list.map(item => {
-    // Tìm phòng hiện tại
-    const currentRoom = getCurrentRoomOfTenant(item.id);
-    const roomName = currentRoom ? `<strong>Phòng ${currentRoom.room.name}</strong>` : '<span class="text-muted small">Chưa thuê</span>';
+    // Tìm phòng hiện tại và ngày vào ở
+    const currentRoomInfo = getCurrentRoomOfTenant(item.id);
+    const roomName = currentRoomInfo ? `<strong>${currentRoomInfo.room.name}</strong>` : '<span class="text-muted small">Không có phòng</span>';
+    const moveInDate = currentRoomInfo && currentRoomInfo.contract ? formatDateToDisplay(currentRoomInfo.contract.startDate) : '<span class="text-muted small">—</span>';
 
     const isInactive = item.status === 'inactive';
     const statusBadge = isInactive
-      ? '<span class="badge badge-tenant-inactive">Đã rời (Lưu trữ)</span>'
+      ? '<span class="badge badge-tenant-inactive">Đã trả phòng</span>'
       : '<span class="badge badge-tenant-active">Đang thuê</span>';
 
-    // Nút lưu trữ (chỉ hiện khi khách còn đang active)
-    const archiveBtn = !isInactive
-      ? `<button class="btn btn-outline-warning btn-sm btn-archive-tenant" data-id="${item.id}" data-testid="btn-archive-tenant-${item.id}" title="Lưu trữ khách trọ">⏸</button>`
-      : '';
+    const initial = item.fullName.charAt(0).toUpperCase();
 
     return `
       <tr data-testid="tenant-row-${item.id}">
-        <td><strong>${item.fullName}</strong></td>
-        <td>${item.phone || '<span class="text-muted small">Chưa có thông tin</span>'}</td>
-        <td><code>${item.idCard || 'Chưa có thông tin'}</code></td>
-        <td><span class="small">${item?.email || 'Chưa có thông tin'}</span></td>
-        <td>${roomName}</td>
-        <td>${statusBadge}</td>
         <td>
-          <div class="btn-group gap-1">
-            <!-- Xem lịch sử thuê -->
-            <button class="btn btn-outline-info btn-sm btn-history-tenant" data-id="${item.id}" data-testid="btn-history-tenant-${item.id}" title="Lịch sử thuê phòng">📜</button>
-            <!-- Sửa -->
-            <button class="btn btn-outline-primary btn-sm btn-edit-tenant" data-id="${item.id}" data-testid="btn-edit-tenant-${item.id}" title="Sửa thông tin">✏️</button>
-            <!-- Lưu trữ -->
-            ${archiveBtn}
-            <!-- Xóa -->
-            <button class="btn btn-outline-danger btn-sm btn-delete-tenant" data-id="${item.id}" data-testid="btn-delete-tenant-${item.id}" title="Xóa vĩnh viễn">✕</button>
+          <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+            ${initial}
+          </div>
+        </td>
+        <td><strong>${item.fullName}</strong></td>
+        <td>${item.phone || '<span class="text-muted small">—</span>'}</td>
+        <td>${item.idCard || '<span class="text-muted small">—</span>'}</td>
+        <td>${roomName}</td>
+        <td>${moveInDate}</td>
+        <td>${statusBadge}</td>
+        <td class="text-end">
+          <div class="dropdown">
+            <button class="btn btn-light btn-sm rounded-circle p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+              <li><a class="dropdown-item btn-action-tenant" href="#" data-action="view" data-id="${item.id}"><i class="bi bi-eye text-primary me-2"></i> Xem chi tiết</a></li>
+              <li><a class="dropdown-item btn-action-tenant" href="#" data-action="edit" data-id="${item.id}"><i class="bi bi-pencil me-2"></i> Sửa</a></li>
+              <li><a class="dropdown-item btn-action-tenant" href="#" data-action="contracts" data-id="${item.id}"><i class="bi bi-file-earmark-text text-success me-2"></i> Xem hợp đồng</a></li>
+              <li><a class="dropdown-item btn-action-tenant" href="#" data-action="history" data-id="${item.id}"><i class="bi bi-clock-history text-info me-2"></i> Xem lịch sử</a></li>
+              ${!isInactive ? `<li><hr class="dropdown-divider"></li><li><a class="dropdown-item btn-action-tenant text-warning" href="#" data-action="archive" data-id="${item.id}"><i class="bi bi-archive me-2"></i> Lưu trữ</a></li>` : ''}
+            </ul>
           </div>
         </td>
       </tr>
     `;
   }).join('');
+
+  if (paginationContainer) {
+    paginationContainer.innerHTML = renderPagination(currentPage, allList.length, ITEMS_PER_PAGE);
+  }
 }
 
 // ─── EVENT BINDING ─────────────────────────────────────────────
@@ -177,38 +236,67 @@ function bindEvents() {
       clearTimeout(debounce);
       debounce = setTimeout(() => {
         currentKeyword = searchInput.value.trim();
+        currentPage = 1;
         renderTenantsList();
       }, 300);
     });
   }
 
-  // Lọc lưu trữ
-  const filterArchived = document.getElementById('filterArchived');
-  if (filterArchived) {
-    filterArchived.addEventListener('change', () => {
-      showArchived = filterArchived.checked;
-      renderTenantsList();
-    });
-  }
+  // Lọc trạng thái
+  document.getElementById('filterStatus')?.addEventListener('change', (e) => {
+    currentStatus = e.target.value;
+    currentPage = 1;
+    renderTenantsList();
+  });
 
-  // Table action delegation
-  const tbody = document.getElementById('tenantsTableBody');
-  if (tbody) {
-    tbody.addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
+  // Lọc phòng
+  document.getElementById('filterRoom')?.addEventListener('change', (e) => {
+    currentRoomId = e.target.value;
+    currentPage = 1;
+    renderTenantsList();
+  });
+
+  // Table action delegation & Pagination
+  const container = document.querySelector('[data-testid="tenants-page"]');
+  if (container) {
+    container.addEventListener('click', (e) => {
+      // Phân trang
+      const pageLink = e.target.closest('.btn-page');
+      if (pageLink) {
+        e.preventDefault();
+        const page = parseInt(pageLink.dataset.page);
+        if (!isNaN(page)) {
+          currentPage = page;
+          renderTenantsList();
+        }
+        return;
+      }
+
+      // Nút action
+      const btn = e.target.closest('.btn-action-tenant');
       if (!btn) return;
-
+      e.preventDefault();
+      
       const id = btn.dataset.id;
-      if (!id) return;
+      const action = btn.dataset.action;
+      if (!id || !action) return;
 
-      if (btn.classList.contains('btn-history-tenant')) {
-        handleHistory(id);
-      } else if (btn.classList.contains('btn-edit-tenant')) {
-        handleEdit(id);
-      } else if (btn.classList.contains('btn-archive-tenant')) {
-        handleArchive(id);
-      } else if (btn.classList.contains('btn-delete-tenant')) {
-        handleDelete(id);
+      switch (action) {
+        case 'view':
+          openTenantProfile(id);
+          break;
+        case 'edit':
+          handleEdit(id);
+          break;
+        case 'contracts':
+          showToast('Chức năng xem hợp đồng đang phát triển', 'info');
+          break;
+        case 'history':
+          handleHistory(id);
+          break;
+        case 'archive':
+          handleArchive(id);
+          break;
       }
     });
   }

@@ -41,30 +41,30 @@ export function openRoomForm({ room = null, onSave }) {
               <div class="row g-3">
 
                 <!-- Hàng 1: Mã phòng + Tên phòng -->
-                <div class="col-md-4">
+                <div class="col-12 col-lg-6">
                   <label for="roomCode" class="form-label fw-semibold">
                     Mã phòng <span class="text-danger">*</span>
                   </label>
                   <input type="text" class="form-control" id="roomCode"
                     data-testid="input-room-code"
                     placeholder="VD: P101, A-201"
+                    value="${v('id')}" ${isEdit ? 'disabled' : 'required'} />
+                  <div class="text-danger small mt-1" id="errorRoomCode" data-testid="error-room-code"></div>
+                </div>
+
+                <div class="col-12 col-lg-6">
+                  <label for="roomName" class="form-label fw-semibold">
+                    Tên phòng <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" class="form-control" id="roomName"
+                    data-testid="input-room-name"
+                    placeholder="VD: Phòng 101, Phòng Master"
                     value="${v('name')}" required />
                   <div class="text-danger small mt-1" id="errorRoomName" data-testid="error-room-name"></div>
                 </div>
 
-                <div class="col-md-8">
-                  <label for="roomDisplayName" class="form-label fw-semibold">
-                    Tên phòng <span class="text-danger">*</span>
-                  </label>
-                  <input type="text" class="form-control" id="roomDisplayName"
-                    data-testid="input-room-display-name"
-                    placeholder="VD: Phòng 101, Phòng Master"
-                    value="${v('displayName', v('name'))}" required />
-                  <div class="text-danger small mt-1" id="errorRoomDisplayName" data-testid="error-room-display-name"></div>
-                </div>
-
                 <!-- Hàng 2: Khu vực / Tầng + Loại phòng -->
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                   <label for="roomFloor" class="form-label fw-semibold">
                     Khu vực / Tầng <span class="text-danger">*</span>
                   </label>
@@ -75,7 +75,7 @@ export function openRoomForm({ room = null, onSave }) {
                   <div class="text-danger small mt-1" id="errorRoomFloor" data-testid="error-room-floor"></div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                   <label for="roomType" class="form-label fw-semibold">
                     Loại phòng <span class="text-danger">*</span>
                   </label>
@@ -92,7 +92,7 @@ export function openRoomForm({ room = null, onSave }) {
                 </div>
 
                 <!-- Hàng 3: Diện tích + Giá thuê -->
-                <div class="col-md-4">
+                <div class="col-12 col-lg-6">
                   <label for="roomArea" class="form-label fw-semibold">
                     Diện tích <span class="text-danger">*</span>
                   </label>
@@ -106,7 +106,7 @@ export function openRoomForm({ room = null, onSave }) {
                   <div class="text-danger small mt-1" id="errorRoomArea" data-testid="error-room-area"></div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-12 col-lg-6">
                   <label for="roomPrice" class="form-label fw-semibold">
                     Giá thuê <span class="text-danger">*</span>
                   </label>
@@ -121,7 +121,7 @@ export function openRoomForm({ room = null, onSave }) {
                 </div>
 
                 <!-- Hàng 3 tiếp: Số người tối đa -->
-                <div class="col-md-4">
+                <div class="col-12 col-lg-6">
                   <label for="roomMaxTenants" class="form-label fw-semibold">
                     Số người tối đa <span class="text-danger">*</span>
                   </label>
@@ -133,7 +133,7 @@ export function openRoomForm({ room = null, onSave }) {
                 </div>
 
                 <!-- Hàng 4: Trạng thái ban đầu -->
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                   <label for="roomStatus" class="form-label fw-semibold">
                     Trạng thái ban đầu
                   </label>
@@ -184,7 +184,7 @@ export function openRoomForm({ room = null, onSave }) {
 
   // ── DOM Refs ──────────────────────────────────────────────
   const inputCode        = document.getElementById('roomCode');
-  const inputDisplayName = document.getElementById('roomDisplayName');
+  const inputName        = document.getElementById('roomName');
   const inputFloor       = document.getElementById('roomFloor');
   const selectType       = document.getElementById('roomType');
   const inputArea        = document.getElementById('roomArea');
@@ -193,8 +193,8 @@ export function openRoomForm({ room = null, onSave }) {
   const selectStatus     = document.getElementById('roomStatus');
   const inputDesc        = document.getElementById('roomDescription');
 
+  const errCode        = document.getElementById('errorRoomCode');
   const errName        = document.getElementById('errorRoomName');
-  const errDisplayName = document.getElementById('errorRoomDisplayName');
   const errFloor       = document.getElementById('errorRoomFloor');
   const errType        = document.getElementById('errorRoomType');
   const errArea        = document.getElementById('errorRoomArea');
@@ -206,7 +206,7 @@ export function openRoomForm({ room = null, onSave }) {
 
   // ── Clear errors ──────────────────────────────────────────
   function clearErrors() {
-    [errName, errDisplayName, errFloor, errType, errArea, errPrice, errMaxTenants, errStatus]
+    [errCode, errName, errFloor, errType, errArea, errPrice, errMaxTenants, errStatus]
       .forEach(el => { if (el) el.textContent = ''; });
   }
 
@@ -216,11 +216,11 @@ export function openRoomForm({ room = null, onSave }) {
     let ok = true;
 
     if (!inputCode.value.trim()) {
-      errName.textContent = 'Mã phòng không được để trống.';
+      errCode.textContent = 'Mã phòng không được để trống.';
       ok = false;
     }
-    if (!inputDisplayName.value.trim()) {
-      errDisplayName.textContent = 'Tên phòng không được để trống.';
+    if (!inputName.value.trim()) {
+      errName.textContent = 'Tên phòng không được để trống.';
       ok = false;
     }
     if (!inputFloor.value.trim()) {
@@ -256,8 +256,8 @@ export function openRoomForm({ room = null, onSave }) {
     if (!validateLocal()) return;
 
     const data = {
-      name:        inputCode.value.trim(),
-      displayName: inputDisplayName.value.trim(),
+      id:          inputCode.value.trim(),
+      name:        inputName.value.trim(),
       floor:       inputFloor.value.trim(),
       type:        selectType.value,
       area:        Number(inputArea.value),
@@ -274,7 +274,8 @@ export function openRoomForm({ room = null, onSave }) {
 
     if (!valResult.valid) {
       valResult.errors.forEach(err => {
-        if (err.includes('Mã phòng'))        errName.textContent = err;
+        if (err.includes('Mã phòng'))        errCode.textContent = err;
+        else if (err.includes('Tên phòng'))  errName.textContent = err;
         else if (err.includes('Giá thuê'))   errPrice.textContent = err;
         else if (err.includes('Số người'))   errMaxTenants.textContent = err;
         else                                  errStatus.textContent = err;

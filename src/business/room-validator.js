@@ -26,21 +26,24 @@ export function normalizeName(name) {
 export function validateRoom(data, existingRooms = [], excludeId = null) {
   const errors = [];
 
-  // Mã phòng (name) bắt buộc
-  if (isEmpty(data.name)) {
+  // Mã phòng (id) bắt buộc
+  if (isEmpty(data.id)) {
     errors.push('Mã phòng không được để trống.');
   } else {
     // Kiểm tra trùng mã phòng (so sánh sau khi chuẩn hóa)
-    const normalized = normalizeName(data.name);
+    const normalized = normalizeName(data.id);
     const isDuplicate = existingRooms.some(
-      room => room.id !== excludeId && normalizeName(room.name) === normalized
+      room => room.id !== excludeId && normalizeName(room.id) === normalized
     );
     if (isDuplicate) {
       errors.push('Mã phòng đã tồn tại trong hệ thống.');
     }
   }
 
-  // Giá thuê không âm
+  // Tên phòng (name) bắt buộc
+  if (isEmpty(data.name)) {
+    errors.push('Tên phòng không được để trống.');
+  }
   if (data.price === undefined || data.price === null || data.price === '') {
     errors.push('Giá thuê không được để trống.');
   } else if (!isNonNegative(data.price)) {

@@ -51,6 +51,14 @@ export function validateTenant(data, existingTenants = [], excludeId = null) {
     }
   }
 
+  // Số điện thoại khẩn cấp – nếu nhập thì phải đúng định dạng
+  if (!isEmpty(data.emergencyPhone)) {
+    const normalizedEmerg = normalizePhone(data.emergencyPhone);
+    if (!isValidPhone(normalizedEmerg)) {
+      errors.push('Số điện thoại liên hệ khẩn cấp không đúng định dạng.');
+    }
+  }
+
   // CCCD – nếu nhập thì kiểm tra trùng
   if (!isEmpty(data.idCard)) {
     const normalizedId = normalizeIdCard(data.idCard);

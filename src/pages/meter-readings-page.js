@@ -24,6 +24,7 @@ import { detectAbnormalUsage } from '../business/meter-calculator.js';
 import { showToast } from '../components/toast.js';
 import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openMeterReadingForm } from '../components/meter-reading-form.js';
+import { initSearchableSelect } from '../components/searchable-select.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentMonth = new Date().getMonth() + 1; // 1-12
@@ -115,6 +116,8 @@ function populateRoomFilter() {
   const rooms = getRooms();
   const options = rooms.map(r => `<option value="${r.id}" ${currentRoomId === r.id ? 'selected' : ''}>${r.name}</option>`).join('');
   filterRoom.innerHTML = '<option value="">Tất cả phòng</option>' + options;
+
+  initSearchableSelect(filterRoom);
 }
 
 // ─── SHOW UNRECORDED ALERTS ───────────────────────────────────

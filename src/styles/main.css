@@ -67,3 +67,25 @@ body {
     display: block;
   }
 }
+
+/* Fix table dropdown overflow */
+@media (min-width: 992px) {
+  .table-responsive {
+    overflow: visible !important;
+  }
+}
+
+/* Custom styles for Searchable Select options scrollbar */
+.searchable-select-options-container::-webkit-scrollbar {
+  width: 6px;
+}
+.searchable-select-options-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+.searchable-select-options-container::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+.searchable-select-options-container::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}

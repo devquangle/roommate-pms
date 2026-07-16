@@ -32,12 +32,14 @@ export const TENANT_STATUS_LABELS = Object.freeze({
  * Trạng thái hợp đồng.
  */
 export const CONTRACT_STATUS = Object.freeze({
+  DRAFT: 'draft',
   ACTIVE: 'active',
   EXPIRED: 'expired',
   TERMINATED: 'terminated',
 });
 
 export const CONTRACT_STATUS_LABELS = Object.freeze({
+  [CONTRACT_STATUS.DRAFT]: 'Bản nháp',
   [CONTRACT_STATUS.ACTIVE]: 'Hiệu lực',
   [CONTRACT_STATUS.EXPIRED]: 'Hết hạn',
   [CONTRACT_STATUS.TERMINATED]: 'Đã thanh lý',

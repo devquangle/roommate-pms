@@ -45,6 +45,12 @@
 .table-responsive {
   overflow-x: auto;
 }
+
+@media (min-width: 992px) {
+  .table-responsive {
+    overflow: visible;
+  }
+}
 .table {
   width: 100%;
   border-collapse: collapse;

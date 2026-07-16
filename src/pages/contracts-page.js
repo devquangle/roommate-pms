@@ -23,6 +23,7 @@ import {
 
 import { getRooms, getRoomById } from '../services/room-service.js';
 import { getTenantById } from '../services/tenant-service.js';
+import { renderPagination } from '../components/pagination.js';
 import { formatCurrency } from '../utils/currency-utils.js';
 import { formatDateToDisplay } from '../utils/date-utils.js';
 import { isValidDate } from '../utils/validation-utils.js';
@@ -35,67 +36,88 @@ import { showToast } from '../components/toast.js';
 import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openContractForm } from '../components/contract-form.js';
 import { openContractDetail } from '../components/contract-detail.js';
+import { initSearchableSelect } from '../components/searchable-select.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentKeyword = '';
 let currentFilters = {};
+let currentPage = 1;
+const ITEMS_PER_PAGE = 8;
 
 // ─── MAIN RENDER ───────────────────────────────────────────────
 
 export function renderContractsPage(container) {
   currentKeyword = '';
   currentFilters = {};
+  currentPage = 1;
 
   container.innerHTML = `
     <div data-testid="contracts-page">
       <!-- Cảnh báo sắp hết hạn -->
       <div id="expiringAlert" data-testid="expiring-alert"></div>
 
-      <!-- Toolbar -->
+      <!-- Header -->
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <h4 class="mb-0">Hợp đồng</h4>
+        <h4 class="mb-0">Quản lý hợp đồng</h4>
         <button class="btn btn-primary btn-sm" id="btnAddContract" data-testid="btn-add-contract">
-          + Thêm hợp đồng
+          <i class="bi bi-plus-circle me-1"></i> Thêm hợp đồng
         </button>
       </div>
 
+      <!-- Statistic Cards -->
+      <div class="row g-2 mb-4" id="statsContainer"></div>
+
       <!-- Filters -->
-      <div class="d-flex flex-wrap align-items-center mb-3 contracts-filter-bar" data-testid="contracts-filter-bar">
-        <input type="text" class="form-control form-control-sm" id="contractSearch" data-testid="input-search-contract"
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3 bg-light p-2 rounded contracts-filter-bar" data-testid="contracts-filter-bar">
+        <!-- Tìm kiếm -->
+        <input type="text" class="form-control form-control-sm flex-grow-1" id="contractSearch" data-testid="input-search-contract"
           placeholder="Tìm theo mã, phòng, người thuê..." />
-        <select class="form-select form-select-sm" id="filterStatus" data-testid="filter-status">
-          <option value="">Tất cả trạng thái</option>
-          <option value="active">Hiệu lực</option>
-          <option value="expired">Hết hạn</option>
-          <option value="terminated">Đã thanh lý</option>
-        </select>
-        <select class="form-select form-select-sm" id="filterRoom" data-testid="filter-room">
+        
+        <!-- Lọc phòng -->
+        <select class="form-select form-select-sm" style="width: auto;" id="filterRoom" data-testid="filter-room">
           <option value="">Tất cả phòng</option>
         </select>
+        
+        <!-- Lọc trạng thái -->
+        <select class="form-select form-select-sm" style="width: auto;" id="filterStatus" data-testid="filter-status">
+          <option value="">Tất cả trạng thái</option>
+          <option value="active">Đang hiệu lực</option>
+          <option value="expired">Hết hạn</option>
+          <option value="terminated">Đã hủy/Thanh lý</option>
+        </select>
+        
+        <!-- Chọn khoảng ngày -->
+        <div class="d-flex align-items-center gap-1">
+          <input type="date" class="form-control form-control-sm" id="filterFromDate" title="Từ ngày (Bắt đầu)" />
+          <span class="text-muted">-</span>
+          <input type="date" class="form-control form-control-sm" id="filterToDate" title="Đến ngày (Bắt đầu)" />
+        </div>
       </div>
 
       <!-- Bảng danh sách -->
       <div class="table-responsive">
-        <table class="table table-hover contracts-table" data-testid="contracts-table">
+        <table class="table table-hover align-middle contracts-table" data-testid="contracts-table">
           <thead class="table-light">
             <tr>
               <th>Mã HĐ</th>
               <th>Phòng</th>
-              <th>Người thuê</th>
-              <th>Bắt đầu</th>
-              <th>Kết thúc</th>
+              <th>Người đại diện</th>
+              <th>Ngày bắt đầu</th>
+              <th>Ngày kết thúc</th>
               <th>Giá thuê</th>
+              <th>Tiền cọc</th>
               <th>Trạng thái</th>
-              <th>Thao tác</th>
+              <th class="text-end">Thao tác</th>
             </tr>
           </thead>
           <tbody id="contractsTableBody" data-testid="contracts-table-body">
           </tbody>
         </table>
       </div>
+      <div id="paginationContainer" class="mt-3"></div>
 
-      <div id="contractsEmpty" class="text-muted text-center d-none" data-testid="contracts-empty">
-        Không có hợp đồng nào.
+      <div id="contractsEmpty" class="text-muted text-center d-none p-4" data-testid="contracts-empty">
+        Không tìm thấy hợp đồng nào phù hợp bộ lọc.
       </div>
     </div>
   `;
@@ -104,11 +126,59 @@ export function renderContractsPage(container) {
   populateRoomFilter();
 
   // Render data
+  renderStats();
   renderExpiringAlert();
   renderContractsList();
 
   // Event listeners
   bindEvents(container);
+}
+
+// ─── STATISTICS ────────────────────────────────────────────────
+function renderStats() {
+  const el = document.getElementById('statsContainer');
+  if (!el) return;
+
+  const allContracts = getContracts();
+  const activeCount = allContracts.filter(c => c.status === CONTRACT_STATUS.ACTIVE).length;
+  const expiringCount = getExpiringContracts(30).length;
+  const expiredCount = allContracts.filter(c => c.status === CONTRACT_STATUS.EXPIRED).length;
+  const cancelledCount = allContracts.filter(c => c.status === CONTRACT_STATUS.TERMINATED).length;
+
+  el.innerHTML = `
+    <div class="col-6 col-md-3">
+      <div class="card text-bg-primary">
+        <div class="card-body p-2">
+          <h6 class="card-title text-uppercase text-white-50 mb-1" style="font-size: 0.75rem;">Đang hiệu lực</h6>
+          <h3 class="mb-0">${activeCount}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-bg-warning">
+        <div class="card-body p-2">
+          <h6 class="card-title text-uppercase text-dark-50 mb-1" style="font-size: 0.75rem;">Sắp hết hạn</h6>
+          <h3 class="mb-0 text-dark">${expiringCount}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-bg-secondary">
+        <div class="card-body p-2">
+          <h6 class="card-title text-uppercase text-white-50 mb-1" style="font-size: 0.75rem;">Hết hạn</h6>
+          <h3 class="mb-0">${expiredCount}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-bg-danger">
+        <div class="card-body p-2">
+          <h6 class="card-title text-uppercase text-white-50 mb-1" style="font-size: 0.75rem;">Đã hủy/Thanh lý</h6>
+          <h3 class="mb-0">${cancelledCount}</h3>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // ─── RENDER EXPIRING ALERT ─────────────────────────────────────
@@ -150,6 +220,8 @@ function populateRoomFilter() {
   const rooms = getRooms();
   const options = rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
   filterRoom.innerHTML = '<option value="">Tất cả phòng</option>' + options;
+
+  initSearchableSelect(filterRoom);
 }
 
 // ─── RENDER CONTRACTS LIST ─────────────────────────────────────
@@ -169,6 +241,12 @@ function getFilteredContracts() {
   }
   if (currentFilters.roomId) {
     contracts = contracts.filter(c => c.roomId === currentFilters.roomId);
+  }
+  if (currentFilters.fromDate) {
+    contracts = contracts.filter(c => c.startDate >= currentFilters.fromDate);
+  }
+  if (currentFilters.toDate) {
+    contracts = contracts.filter(c => c.startDate <= currentFilters.toDate);
   }
 
   // Sort: active first, then by startDate desc
@@ -194,25 +272,33 @@ function getStatusBadge(status) {
 function renderContractsList() {
   const tbody = document.getElementById('contractsTableBody');
   const emptyEl = document.getElementById('contractsEmpty');
+  const paginationContainer = document.getElementById('paginationContainer');
   if (!tbody) return;
 
-  const contracts = getFilteredContracts();
+  const allFiltered = getFilteredContracts();
 
-  if (contracts.length === 0) {
+  if (allFiltered.length === 0) {
     tbody.innerHTML = '';
     emptyEl && emptyEl.classList.remove('d-none');
+    if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
 
   emptyEl && emptyEl.classList.add('d-none');
 
-  tbody.innerHTML = contracts.map(c => {
+  // Phân trang
+  const totalPages = Math.ceil(allFiltered.length / ITEMS_PER_PAGE) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const list = allFiltered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  tbody.innerHTML = list.map(c => {
     const room = getRoomById(c.roomId);
     const tenant = getTenantById(c.tenantId);
-    const roomName = room ? room.name : 'N/A';
+    const roomName = room ? `<strong>${room.name}</strong>` : 'N/A';
     const tenantName = tenant ? tenant.fullName : 'N/A';
     const expiring = isContractExpiringSoon(c, new Date(), 30);
-    const rowClass = expiring ? 'row-expiring' : '';
+    const rowClass = expiring ? 'table-warning' : ''; // Làm nổi bật dòng sắp hết hạn
 
     // Action buttons depend on status
     const actions = buildActionButtons(c);
@@ -220,8 +306,8 @@ function renderContractsList() {
     return `
       <tr class="${rowClass}" data-testid="contract-row-${c.id}" data-id="${c.id}">
         <td>
-          <a href="#" class="btn-view-contract text-primary text-decoration-none" data-id="${c.id}" data-testid="btn-view-contract-${c.id}">
-            ${c.id.substring(0, 10)}…
+          <a href="#" class="btn-view-contract fw-bold text-decoration-none" data-id="${c.id}" data-testid="btn-view-contract-${c.id}">
+            ${c.id.substring(0, 8).toUpperCase()}
           </a>
         </td>
         <td>${roomName}</td>
@@ -229,38 +315,51 @@ function renderContractsList() {
         <td>${c.startDate ? formatDateToDisplay(c.startDate) : 'N/A'}</td>
         <td>
           ${c.endDate ? formatDateToDisplay(c.endDate) : 'N/A'}
-          ${expiring ? '<span class="badge bg-warning text-dark ms-1" title="Sắp hết hạn">⏰</span>' : ''}
+          ${expiring ? '<span class="badge bg-danger ms-1" title="Sắp hết hạn">⏰</span>' : ''}
         </td>
         <td>${formatCurrency(c.roomPrice)}</td>
+        <td>${formatCurrency(c.deposit)}</td>
         <td>${getStatusBadge(c.status)}</td>
-        <td>
-          <div class="btn-group">${actions}</div>
+        <td class="text-end">
+          <div class="dropdown">
+            <button class="btn btn-light btn-sm rounded-circle p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+              ${actions}
+            </ul>
+          </div>
         </td>
       </tr>
     `;
   }).join('');
+
+  if (paginationContainer) {
+    paginationContainer.innerHTML = renderPagination(currentPage, allFiltered.length, ITEMS_PER_PAGE);
+  }
 }
 
 function buildActionButtons(contract) {
   const btns = [];
 
   // Xem chi tiết – always available
-  btns.push(`<button class="btn btn-outline-info btn-action-view" data-id="${contract.id}" data-testid="btn-action-view" title="Xem">👁</button>`);
+  btns.push(`<li><a class="dropdown-item btn-action-view" href="#" data-action="view" data-id="${contract.id}"><i class="bi bi-eye text-primary me-2"></i> Xem chi tiết</a></li>`);
 
   if (contract.status === CONTRACT_STATUS.ACTIVE) {
     // Sửa
-    btns.push(`<button class="btn btn-outline-primary btn-action-edit" data-id="${contract.id}" data-testid="btn-action-edit-${contract.id}" title="Sửa">✏️</button>`);
+    btns.push(`<li><a class="dropdown-item btn-action-edit" href="#" data-action="edit" data-id="${contract.id}"><i class="bi bi-pencil me-2"></i> Sửa thông tin</a></li>`);
     // Gia hạn
-    btns.push(`<button class="btn btn-outline-success btn-action-extend" data-id="${contract.id}" data-testid="btn-action-extend-${contract.id}" title="Gia hạn">📅</button>`);
+    btns.push(`<li><a class="dropdown-item btn-action-extend" href="#" data-action="extend" data-id="${contract.id}"><i class="bi bi-calendar-plus text-success me-2"></i> Gia hạn hợp đồng</a></li>`);
+    btns.push(`<li><hr class="dropdown-divider"></li>`);
     // Kết thúc
-    btns.push(`<button class="btn btn-outline-warning btn-action-end" data-id="${contract.id}" data-testid="btn-action-end-${contract.id}" title="Kết thúc">🔚</button>`);
+    btns.push(`<li><a class="dropdown-item btn-action-end text-warning" href="#" data-action="end" data-id="${contract.id}"><i class="bi bi-check2-square me-2"></i> Kết thúc bình thường</a></li>`);
     // Hủy
-    btns.push(`<button class="btn btn-outline-danger btn-action-cancel" data-id="${contract.id}" data-testid="btn-action-cancel-${contract.id}" title="Hủy/Thanh lý">✕</button>`);
+    btns.push(`<li><a class="dropdown-item btn-action-cancel text-danger" href="#" data-action="cancel" data-id="${contract.id}"><i class="bi bi-x-circle me-2"></i> Hủy / Thanh lý sớm</a></li>`);
   }
 
   if (contract.status === CONTRACT_STATUS.EXPIRED) {
     // Kích hoạt lại
-    btns.push(`<button class="btn btn-outline-success btn-action-activate" data-id="${contract.id}" data-testid="btn-action-activate-${contract.id}" title="Kích hoạt lại">▶️</button>`);
+    btns.push(`<li><a class="dropdown-item btn-action-activate text-success" href="#" data-action="activate" data-id="${contract.id}"><i class="bi bi-play-circle me-2"></i> Kích hoạt lại</a></li>`);
   }
 
   return btns.join('');
@@ -317,7 +416,44 @@ function bindEvents(container) {
   if (filterRoom) {
     filterRoom.addEventListener('change', () => {
       currentFilters.roomId = filterRoom.value || undefined;
+      currentPage = 1;
       renderContractsList();
+    });
+  }
+
+  // Filter From Date
+  const filterFromDate = document.getElementById('filterFromDate');
+  if (filterFromDate) {
+    filterFromDate.addEventListener('change', () => {
+      currentFilters.fromDate = filterFromDate.value || undefined;
+      currentPage = 1;
+      renderContractsList();
+    });
+  }
+
+  // Filter To Date
+  const filterToDate = document.getElementById('filterToDate');
+  if (filterToDate) {
+    filterToDate.addEventListener('change', () => {
+      currentFilters.toDate = filterToDate.value || undefined;
+      currentPage = 1;
+      renderContractsList();
+    });
+  }
+
+  // Pagination delegation
+  const paginationContainer = document.getElementById('paginationContainer');
+  if (paginationContainer) {
+    paginationContainer.addEventListener('click', (e) => {
+      const pageLink = e.target.closest('.btn-page');
+      if (pageLink) {
+        e.preventDefault();
+        const page = parseInt(pageLink.dataset.page);
+        if (!isNaN(page)) {
+          currentPage = page;
+          renderContractsList();
+        }
+      }
     });
   }
 

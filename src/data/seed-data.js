@@ -33,9 +33,8 @@
 export const SEED_ROOMS = [
   // 7 phòng đang thuê (rented)
   {
-    id: "r-001",
-    name: "P.101",
-    displayName: "Phòng 101",
+    id: "P101",
+    name: "Phòng 101",
     floor: "Tầng 1",
     type: "standard",
     price: 3000000,
@@ -47,9 +46,8 @@ export const SEED_ROOMS = [
     updatedAt: "2026-01-01T00:00:00.000Z",
   },
   {
-    id: "r-002",
-    name: "P.102",
-    displayName: "Phòng 102",
+    id: "P102",
+    name: "Phòng 102",
     floor: "Tầng 1",
     type: "deluxe",
     price: 3500000,
@@ -61,9 +59,8 @@ export const SEED_ROOMS = [
     updatedAt: "2026-02-01T00:00:00.000Z",
   },
   {
-    id: "r-003",
-    name: "P.201",
-    displayName: "Phòng 201",
+    id: "P201",
+    name: "Phòng 201",
     floor: "Tầng 2",
     type: "suite",
     price: 4000000,
@@ -75,9 +72,8 @@ export const SEED_ROOMS = [
     updatedAt: "2026-03-01T00:00:00.000Z",
   },
   {
-    id: "r-004",
-    name: "P.202",
-    displayName: "Phòng 202",
+    id: "P202",
+    name: "Phòng 202",
     floor: "Tầng 2",
     type: "standard",
     price: 3200000,
@@ -89,9 +85,8 @@ export const SEED_ROOMS = [
     updatedAt: "2026-01-15T00:00:00.000Z",
   },
   {
-    id: "r-005",
-    name: "P.203",
-    displayName: "Phòng 203",
+    id: "P203",
+    name: "Phòng 203",
     floor: "Tầng 2",
     type: "deluxe",
     price: 3800000,
@@ -103,9 +98,8 @@ export const SEED_ROOMS = [
     updatedAt: "2025-08-01T00:00:00.000Z",
   },
   {
-    id: "r-007",
-    name: "P.302",
-    displayName: "Phòng 302",
+    id: "P302",
+    name: "Phòng 302",
     floor: "Tầng 3",
     type: "suite",
     price: 4500000,
@@ -117,9 +111,8 @@ export const SEED_ROOMS = [
     updatedAt: "2026-04-01T00:00:00.000Z",
   },
   {
-    id: "r-008",
-    name: "P.303",
-    displayName: "Phòng 303",
+    id: "P303",
+    name: "Phòng 303",
     floor: "Tầng 3",
     type: "standard",
     price: 3000000,
@@ -133,9 +126,8 @@ export const SEED_ROOMS = [
 
   // 2 phòng trống (available)
   {
-    id: "r-006",
-    name: "P.301",
-    displayName: "Phòng 301",
+    id: "P301",
+    name: "Phòng 301",
     floor: "Tầng 3",
     type: "standard",
     price: 2800000,
@@ -147,9 +139,8 @@ export const SEED_ROOMS = [
     updatedAt: "2026-01-01T00:00:00.000Z",
   },
   {
-    id: "r-010",
-    name: "P.401",
-    displayName: "Phòng 401",
+    id: "P401",
+    name: "Phòng 401",
     floor: "Tầng 4",
     type: "studio",
     price: 2500000,
@@ -163,9 +154,8 @@ export const SEED_ROOMS = [
 
   // 1 phòng bảo trì (maintenance)
   {
-    id: "r-009",
-    name: "P.304",
-    displayName: "Phòng 304",
+    id: "P304",
+    name: "Phòng 304",
     floor: "Tầng 3",
     type: "deluxe",
     price: 3500000,
@@ -175,6 +165,37 @@ export const SEED_ROOMS = [
     description: "Phòng tầng 3, đang sửa chữa",
     createdAt: "2025-12-01T00:00:00.000Z",
     updatedAt: "2026-06-15T00:00:00.000Z",
+  },
+  // --- Thêm 10 phòng mới ---
+  {
+    id: "P402", name: "Phòng 402", floor: "Tầng 4", type: "standard", price: 2800000, area: 18, status: "available", maxTenants: 2, description: "Phòng mới trống", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
+  },
+  {
+    id: "P403", name: "Phòng 403", floor: "Tầng 4", type: "deluxe", price: 3500000, area: 25, status: "available", maxTenants: 3, description: "Gần thang máy", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
+  },
+  {
+    id: "P501", name: "Phòng 501", floor: "Tầng 5", type: "suite", price: 4200000, area: 32, status: "rented", maxTenants: 4, description: "Tầng cao thoáng", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
+  },
+  {
+    id: "P502", name: "Phòng 502", floor: "Tầng 5", type: "standard", price: 3000000, area: 20, status: "available", maxTenants: 2, description: "", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
+  },
+  {
+    id: "P503", name: "Phòng 503", floor: "Tầng 5", type: "studio", price: 2700000, area: 17, status: "maintenance", maxTenants: 2, description: "Bảo trì sơn tường", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z"
+  },
+  {
+    id: "P601", name: "Phòng 601", floor: "Tầng 6", type: "deluxe", price: 3700000, area: 26, status: "available", maxTenants: 3, description: "", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
+  },
+  {
+    id: "P602", name: "Phòng 602", floor: "Tầng 6", type: "standard", price: 3100000, area: 21, status: "available", maxTenants: 2, description: "", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
+  },
+  {
+    id: "P701", name: "Phòng 701", floor: "Tầng 7", type: "suite", price: 5000000, area: 40, status: "available", maxTenants: 4, description: "Phòng penthouse mini", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
+  },
+  {
+    id: "P702", name: "Phòng 702", floor: "Tầng 7", type: "deluxe", price: 3900000, area: 28, status: "rented", maxTenants: 3, description: "", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
+  },
+  {
+    id: "P703", name: "Phòng 703", floor: "Tầng 7", type: "standard", price: 3200000, area: 22, status: "available", maxTenants: 2, description: "", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
   },
 ];
 
@@ -189,6 +210,15 @@ export const SEED_TENANTS = [
     idCard: "079200001001",
     email: "an.nv@gmail.com",
     address: "Quận 1, TP.HCM",
+    dob: "1995-05-15",
+    gender: "Nam",
+    occupation: "Kỹ sư phần mềm",
+    licensePlate: "59X1-12345",
+    vehicleType: "Xe máy AirBlade",
+    emergencyName: "Nguyễn Văn Bảo",
+    emergencyPhone: "0902000001",
+    emergencyRelation: "Bố",
+    notes: "Khách quen, thanh toán đúng hạn.",
     createdAt: "2025-12-15T00:00:00.000Z",
     updatedAt: "2025-12-15T00:00:00.000Z",
   },
@@ -199,6 +229,15 @@ export const SEED_TENANTS = [
     idCard: "079200001002",
     email: "binh.tt@gmail.com",
     address: "Quận 3, TP.HCM",
+    dob: "1998-08-20",
+    gender: "Nữ",
+    occupation: "Kế toán",
+    licensePlate: "59Y1-98765",
+    vehicleType: "Xe máy Vision",
+    emergencyName: "Trần Văn Cường",
+    emergencyPhone: "0902000002",
+    emergencyRelation: "Anh trai",
+    notes: "",
     createdAt: "2025-12-15T00:00:00.000Z",
     updatedAt: "2025-12-15T00:00:00.000Z",
   },
@@ -209,6 +248,15 @@ export const SEED_TENANTS = [
     idCard: "079200001003",
     email: "cuong.lv@gmail.com",
     address: "Quận 5, TP.HCM",
+    dob: "2000-11-10",
+    gender: "Nam",
+    occupation: "Sinh viên",
+    licensePlate: "59Z1-11223",
+    vehicleType: "Xe máy Wave",
+    emergencyName: "Lê Thị Dung",
+    emergencyPhone: "0902000003",
+    emergencyRelation: "Mẹ",
+    notes: "Hay về trễ do đi làm thêm.",
     createdAt: "2025-12-20T00:00:00.000Z",
     updatedAt: "2025-12-20T00:00:00.000Z",
   },
@@ -219,6 +267,15 @@ export const SEED_TENANTS = [
     idCard: "079200001004",
     email: "dung.pt@gmail.com",
     address: "Quận 7, TP.HCM",
+    dob: "1999-02-28",
+    gender: "Nữ",
+    occupation: "Giáo viên",
+    licensePlate: "59A1-44556",
+    vehicleType: "Xe máy Lead",
+    emergencyName: "Phạm Văn Đông",
+    emergencyPhone: "0902000004",
+    emergencyRelation: "Bố",
+    notes: "",
     createdAt: "2025-12-20T00:00:00.000Z",
     updatedAt: "2025-12-20T00:00:00.000Z",
   },
@@ -229,6 +286,15 @@ export const SEED_TENANTS = [
     idCard: "079200001005",
     email: "duc.hm@gmail.com",
     address: "Quận Bình Thạnh",
+    dob: "1996-07-15",
+    gender: "Nam",
+    occupation: "Thiết kế đồ họa",
+    licensePlate: "",
+    vehicleType: "",
+    emergencyName: "Hoàng Thị Êm",
+    emergencyPhone: "0902000005",
+    emergencyRelation: "Chị gái",
+    notes: "Không có xe máy.",
     createdAt: "2026-01-05T00:00:00.000Z",
     updatedAt: "2026-01-05T00:00:00.000Z",
   },
@@ -239,6 +305,15 @@ export const SEED_TENANTS = [
     idCard: "079200001006",
     email: "hoa.vt@gmail.com",
     address: "Quận Gò Vấp",
+    dob: "1997-09-05",
+    gender: "Nữ",
+    occupation: "Nhân viên ngân hàng",
+    licensePlate: "59B1-77889",
+    vehicleType: "Xe máy SH Mode",
+    emergencyName: "Võ Văn Giáp",
+    emergencyPhone: "0902000006",
+    emergencyRelation: "Bố",
+    notes: "",
     createdAt: "2026-01-05T00:00:00.000Z",
     updatedAt: "2026-01-05T00:00:00.000Z",
   },
@@ -249,6 +324,15 @@ export const SEED_TENANTS = [
     idCard: "079200001007",
     email: "giang.dv@gmail.com",
     address: "Quận Tân Bình",
+    dob: "1994-04-12",
+    gender: "Nam",
+    occupation: "Kỹ thuật viên",
+    licensePlate: "59C1-99000",
+    vehicleType: "Xe máy Exciter",
+    emergencyName: "Đặng Thị Hải",
+    emergencyPhone: "0902000007",
+    emergencyRelation: "Mẹ",
+    notes: "",
     createdAt: "2026-01-10T00:00:00.000Z",
     updatedAt: "2026-01-10T00:00:00.000Z",
   },
@@ -259,6 +343,15 @@ export const SEED_TENANTS = [
     idCard: "079200001008",
     email: "hanh.bt@gmail.com",
     address: "Quận Phú Nhuận",
+    dob: "1995-12-01",
+    gender: "Nữ",
+    occupation: "Content Creator",
+    licensePlate: "59D1-22334",
+    vehicleType: "Xe máy Vespa",
+    emergencyName: "Bùi Văn Ích",
+    emergencyPhone: "0902000008",
+    emergencyRelation: "Bố",
+    notes: "",
     createdAt: "2025-07-15T00:00:00.000Z",
     updatedAt: "2025-07-15T00:00:00.000Z",
   },
@@ -269,6 +362,15 @@ export const SEED_TENANTS = [
     idCard: "079200001009",
     email: "hung.nq@gmail.com",
     address: "Quận 10, TP.HCM",
+    dob: "1990-03-10",
+    gender: "Nam",
+    occupation: "Kinh doanh tự do",
+    licensePlate: "59E1-55667",
+    vehicleType: "Ô tô Kia Morning",
+    emergencyName: "Ngô Thị Kim",
+    emergencyPhone: "0902000009",
+    emergencyRelation: "Vợ",
+    notes: "Đậu ô tô ở bãi ngoài.",
     createdAt: "2026-02-01T00:00:00.000Z",
     updatedAt: "2026-02-01T00:00:00.000Z",
   },
@@ -279,6 +381,15 @@ export const SEED_TENANTS = [
     idCard: "079200001010",
     email: "khanh.mv@gmail.com",
     address: "Quận 12, TP.HCM",
+    dob: "1998-06-25",
+    gender: "Nam",
+    occupation: "IT Support",
+    licensePlate: "59F1-88990",
+    vehicleType: "Xe máy Sirius",
+    emergencyName: "Mai Thị Liên",
+    emergencyPhone: "0902000010",
+    emergencyRelation: "Mẹ",
+    notes: "Đã trả phòng.",
     createdAt: "2024-12-20T00:00:00.000Z",
     updatedAt: "2024-12-20T00:00:00.000Z",
   },
@@ -289,6 +400,15 @@ export const SEED_TENANTS = [
     idCard: "079200001011",
     email: "lan.pt@gmail.com",
     address: "Quận Thủ Đức",
+    dob: "2001-01-15",
+    gender: "Nữ",
+    occupation: "Sinh viên",
+    licensePlate: "59G1-11222",
+    vehicleType: "Xe máy Vision",
+    emergencyName: "Phan Văn Minh",
+    emergencyPhone: "0902000011",
+    emergencyRelation: "Bố",
+    notes: "",
     createdAt: "2026-03-15T00:00:00.000Z",
     updatedAt: "2026-03-15T00:00:00.000Z",
   },
@@ -299,6 +419,15 @@ export const SEED_TENANTS = [
     idCard: "079200001012",
     email: "minh.tc@gmail.com",
     address: "Quận 9, TP.HCM",
+    dob: "1992-10-30",
+    gender: "Nam",
+    occupation: "Kỹ sư xây dựng",
+    licensePlate: "59H1-33445",
+    vehicleType: "Xe máy AirBlade",
+    emergencyName: "Trương Thị Nga",
+    emergencyPhone: "0902000012",
+    emergencyRelation: "Vợ",
+    notes: "Hay đi công tác.",
     createdAt: "2026-03-15T00:00:00.000Z",
     updatedAt: "2026-03-15T00:00:00.000Z",
   },
@@ -309,6 +438,15 @@ export const SEED_TENANTS = [
     idCard: "079200001013",
     email: "ngoc.lt@gmail.com",
     address: "Quận 2, TP.HCM",
+    dob: "1995-04-05",
+    gender: "Nữ",
+    occupation: "Nhân viên Marketing",
+    licensePlate: "59K1-66778",
+    vehicleType: "Xe máy Grande",
+    emergencyName: "Lý Văn Oanh",
+    emergencyPhone: "0902000013",
+    emergencyRelation: "Bố",
+    notes: "",
     createdAt: "2026-04-20T00:00:00.000Z",
     updatedAt: "2026-04-20T00:00:00.000Z",
   },
@@ -319,6 +457,15 @@ export const SEED_TENANTS = [
     idCard: "079200001014",
     email: "phong.hv@gmail.com",
     address: "Quận 4, TP.HCM",
+    dob: "1993-08-18",
+    gender: "Nam",
+    occupation: "Lập trình viên",
+    licensePlate: "59L1-99001",
+    vehicleType: "Xe máy NVX",
+    emergencyName: "Huỳnh Thị Quyên",
+    emergencyPhone: "0902000014",
+    emergencyRelation: "Mẹ",
+    notes: "",
     createdAt: "2026-05-01T00:00:00.000Z",
     updatedAt: "2026-05-01T00:00:00.000Z",
   },
@@ -329,8 +476,78 @@ export const SEED_TENANTS = [
     idCard: "079200001015",
     email: "quynh.dt@gmail.com",
     address: "Quận 6, TP.HCM",
+    dob: "1999-11-22",
+    gender: "Nữ",
+    occupation: "Nhân viên Sale",
+    licensePlate: "59M1-22334",
+    vehicleType: "Xe máy Lead",
+    emergencyName: "Đinh Văn Rô",
+    emergencyPhone: "0902000015",
+    emergencyRelation: "Anh trai",
+    notes: "",
     createdAt: "2026-05-10T00:00:00.000Z",
     updatedAt: "2026-05-10T00:00:00.000Z",
+  },
+  // --- Thêm 20 người thuê mới ---
+  {
+    id: "t-016", fullName: "Nguyễn Văn Thái", phone: "0901000016", idCard: "079200001016", email: "thai.nv@gmail.com", address: "Hà Nội", dob: "1997-03-12", gender: "Nam", occupation: "Marketing", licensePlate: "29A1-12345", vehicleType: "Xe máy", emergencyName: "Nguyễn Văn Nam", emergencyPhone: "0902000016", emergencyRelation: "Bố", notes: "", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z",
+  },
+  {
+    id: "t-017", fullName: "Trần Mai Phương", phone: "0901000017", idCard: "079200001017", email: "phuong.tm@gmail.com", address: "Đà Nẵng", dob: "1999-11-20", gender: "Nữ", occupation: "Nhà báo", licensePlate: "43A1-54321", vehicleType: "Xe máy", emergencyName: "Trần Văn Đông", emergencyPhone: "0902000017", emergencyRelation: "Anh trai", notes: "Hay công tác", createdAt: "2026-06-05T00:00:00.000Z", updatedAt: "2026-06-05T00:00:00.000Z",
+  },
+  {
+    id: "t-018", fullName: "Lê Hoàng Phúc", phone: "0901000018", idCard: "079200001018", email: "phuc.lh@gmail.com", address: "Cần Thơ", dob: "2000-05-14", gender: "Nam", occupation: "Sinh viên", licensePlate: "65B1-99887", vehicleType: "Xe số", emergencyName: "Lê Thị Thảo", emergencyPhone: "0902000018", emergencyRelation: "Mẹ", notes: "", createdAt: "2026-06-10T00:00:00.000Z", updatedAt: "2026-06-10T00:00:00.000Z",
+  },
+  {
+    id: "t-019", fullName: "Phạm Tấn Trường", phone: "0901000019", idCard: "079200001019", email: "truong.pt@gmail.com", address: "Đồng Nai", dob: "1996-08-08", gender: "Nam", occupation: "Kỹ sư", licensePlate: "60C1-22334", vehicleType: "Tay ga", emergencyName: "Phạm Văn Minh", emergencyPhone: "0902000019", emergencyRelation: "Bố", notes: "", createdAt: "2026-06-12T00:00:00.000Z", updatedAt: "2026-06-12T00:00:00.000Z",
+  },
+  {
+    id: "t-020", fullName: "Hoàng Ngân Giang", phone: "0901000020", idCard: "079200001020", email: "giang.hn@gmail.com", address: "Bình Dương", dob: "2002-01-22", gender: "Nữ", occupation: "Thu ngân", licensePlate: "61D1-44556", vehicleType: "Xe điện", emergencyName: "Hoàng Văn Tuấn", emergencyPhone: "0902000020", emergencyRelation: "Bố", notes: "", createdAt: "2026-06-15T00:00:00.000Z", updatedAt: "2026-06-15T00:00:00.000Z",
+  },
+  {
+    id: "t-021", fullName: "Võ Quang Vinh", phone: "0901000021", idCard: "079200001021", email: "vinh.vq@gmail.com", address: "Vũng Tàu", dob: "1995-10-10", gender: "Nam", occupation: "Nhân viên kinh doanh", licensePlate: "72E1-66778", vehicleType: "Honda Airblade", emergencyName: "Võ Thị Yến", emergencyPhone: "0902000021", emergencyRelation: "Chị gái", notes: "", createdAt: "2026-06-18T00:00:00.000Z", updatedAt: "2026-06-18T00:00:00.000Z",
+  },
+  {
+    id: "t-022", fullName: "Đặng Mỹ Linh", phone: "0901000022", idCard: "079200001022", email: "linh.dm@gmail.com", address: "Hải Phòng", dob: "1998-12-05", gender: "Nữ", occupation: "Giáo viên mầm non", licensePlate: "15F1-88990", vehicleType: "Yamaha Grande", emergencyName: "Đặng Văn Tiến", emergencyPhone: "0902000022", emergencyRelation: "Bố", notes: "", createdAt: "2026-06-20T00:00:00.000Z", updatedAt: "2026-06-20T00:00:00.000Z",
+  },
+  {
+    id: "t-023", fullName: "Bùi Quốc Anh", phone: "0901000023", idCard: "079200001023", email: "anh.bq@gmail.com", address: "TP.HCM", dob: "1994-07-30", gender: "Nam", occupation: "Designer", licensePlate: "59G1-11222", vehicleType: "Vespa", emergencyName: "Bùi Thị Tuyết", emergencyPhone: "0902000023", emergencyRelation: "Mẹ", notes: "", createdAt: "2026-06-22T00:00:00.000Z", updatedAt: "2026-06-22T00:00:00.000Z",
+  },
+  {
+    id: "t-024", fullName: "Ngô Ánh Tuyết", phone: "0901000024", idCard: "079200001024", email: "tuyet.na@gmail.com", address: "Đà Lạt", dob: "1999-04-18", gender: "Nữ", occupation: "Lễ tân", licensePlate: "49H1-33444", vehicleType: "Honda Vision", emergencyName: "Ngô Văn Hùng", emergencyPhone: "0902000024", emergencyRelation: "Bố", notes: "", createdAt: "2026-06-25T00:00:00.000Z", updatedAt: "2026-06-25T00:00:00.000Z",
+  },
+  {
+    id: "t-025", fullName: "Mai Trường Giang", phone: "0901000025", idCard: "079200001025", email: "giang.mt@gmail.com", address: "Tây Ninh", dob: "2001-09-09", gender: "Nam", occupation: "Kỹ thuật viên IT", licensePlate: "70K1-55666", vehicleType: "Yamaha Exciter", emergencyName: "Mai Thị Hạnh", emergencyPhone: "0902000025", emergencyRelation: "Mẹ", notes: "", createdAt: "2026-06-28T00:00:00.000Z", updatedAt: "2026-06-28T00:00:00.000Z",
+  },
+  {
+    id: "t-026", fullName: "Phan Đình Phùng", phone: "0901000026", idCard: "079200001026", email: "phung.pd@gmail.com", address: "Bình Phước", dob: "1993-02-14", gender: "Nam", occupation: "Lái xe", licensePlate: "93L1-77888", vehicleType: "Honda Winner", emergencyName: "Phan Văn Chinh", emergencyPhone: "0902000026", emergencyRelation: "Anh trai", notes: "Trả phòng cuối tháng", createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z",
+  },
+  {
+    id: "t-027", fullName: "Trương Tiểu Mẫn", phone: "0901000027", idCard: "079200001027", email: "man.tt@gmail.com", address: "Long An", dob: "1997-08-25", gender: "Nữ", occupation: "Freelancer", licensePlate: "62M1-99000", vehicleType: "Honda Lead", emergencyName: "Trương Văn Khải", emergencyPhone: "0902000027", emergencyRelation: "Bố", notes: "", createdAt: "2026-07-05T00:00:00.000Z", updatedAt: "2026-07-05T00:00:00.000Z",
+  },
+  {
+    id: "t-028", fullName: "Lý Thế Anh", phone: "0901000028", idCard: "079200001028", email: "anh.lt@gmail.com", address: "Bến Tre", dob: "1995-06-11", gender: "Nam", occupation: "Sale", licensePlate: "71N1-11222", vehicleType: "Yamaha Sirius", emergencyName: "Lý Thị Quyên", emergencyPhone: "0902000028", emergencyRelation: "Mẹ", notes: "", createdAt: "2026-07-08T00:00:00.000Z", updatedAt: "2026-07-08T00:00:00.000Z",
+  },
+  {
+    id: "t-029", fullName: "Huỳnh Tú My", phone: "0901000029", idCard: "079200001029", email: "my.ht@gmail.com", address: "Vĩnh Long", dob: "2000-12-30", gender: "Nữ", occupation: "Dược sĩ", licensePlate: "64P1-33444", vehicleType: "Honda SH Mode", emergencyName: "Huỳnh Văn Tài", emergencyPhone: "0902000029", emergencyRelation: "Bố", notes: "", createdAt: "2026-07-10T00:00:00.000Z", updatedAt: "2026-07-10T00:00:00.000Z",
+  },
+  {
+    id: "t-030", fullName: "Đinh Nhật Tuấn", phone: "0901000030", idCard: "079200001030", email: "tuan.dn@gmail.com", address: "Cà Mau", dob: "1998-05-19", gender: "Nam", occupation: "Nhân viên bưu điện", licensePlate: "69Q1-55666", vehicleType: "Honda Wave Alpha", emergencyName: "Đinh Thị Hoa", emergencyPhone: "0902000030", emergencyRelation: "Mẹ", notes: "", createdAt: "2026-07-12T00:00:00.000Z", updatedAt: "2026-07-12T00:00:00.000Z",
+  },
+  {
+    id: "t-031", fullName: "Vũ Hải Đăng", phone: "0901000031", idCard: "079200001031", email: "dang.vh@gmail.com", address: "Kiên Giang", dob: "1996-02-28", gender: "Nam", occupation: "Kiến trúc sư", licensePlate: "68R1-77888", vehicleType: "Yamaha NVX", emergencyName: "Vũ Văn Lộc", emergencyPhone: "0902000031", emergencyRelation: "Bố", notes: "", createdAt: "2026-07-14T00:00:00.000Z", updatedAt: "2026-07-14T00:00:00.000Z",
+  },
+  {
+    id: "t-032", fullName: "Bạch Thu Thủy", phone: "0901000032", idCard: "079200001032", email: "thuy.bt@gmail.com", address: "Bạc Liêu", dob: "1999-10-15", gender: "Nữ", occupation: "Kế toán viên", licensePlate: "94S1-99000", vehicleType: "Honda Vision", emergencyName: "Bạch Văn Tâm", emergencyPhone: "0902000032", emergencyRelation: "Bố", notes: "", createdAt: "2026-07-15T00:00:00.000Z", updatedAt: "2026-07-15T00:00:00.000Z",
+  },
+  {
+    id: "t-033", fullName: "Cao Hữu Đạt", phone: "0901000033", idCard: "079200001033", email: "dat.ch@gmail.com", address: "Sóc Trăng", dob: "1994-01-05", gender: "Nam", occupation: "Quản lý cửa hàng", licensePlate: "83T1-11222", vehicleType: "Honda PCX", emergencyName: "Cao Thị Mừng", emergencyPhone: "0902000033", emergencyRelation: "Mẹ", notes: "", createdAt: "2026-07-16T00:00:00.000Z", updatedAt: "2026-07-16T00:00:00.000Z",
+  },
+  {
+    id: "t-034", fullName: "Tạ Thị Kiều", phone: "0901000034", idCard: "079200001034", email: "kieu.tt@gmail.com", address: "Trà Vinh", dob: "2001-07-22", gender: "Nữ", occupation: "Sinh viên", licensePlate: "84U1-33444", vehicleType: "Yamaha Janus", emergencyName: "Tạ Văn Cường", emergencyPhone: "0902000034", emergencyRelation: "Bố", notes: "", createdAt: "2026-07-16T00:00:00.000Z", updatedAt: "2026-07-16T00:00:00.000Z",
+  },
+  {
+    id: "t-035", fullName: "Chu Trọng Đạo", phone: "0901000035", idCard: "079200001035", email: "dao.ct@gmail.com", address: "Tiền Giang", dob: "1992-04-10", gender: "Nam", occupation: "Thầu xây dựng", licensePlate: "63V1-55666", vehicleType: "Honda SH 150i", emergencyName: "Chu Thị Bé", emergencyPhone: "0902000035", emergencyRelation: "Mẹ", notes: "", createdAt: "2026-07-16T00:00:00.000Z", updatedAt: "2026-07-16T00:00:00.000Z",
   },
 ];
 
@@ -340,8 +557,9 @@ export const SEED_CONTRACTS = [
   // 6 active (hiệu lực dài hạn)
   {
     id: "c-001",
-    roomId: "r-001",
+    roomId: "P101",
     tenantId: "t-001",
+    coTenantIds: ["t-003", "t-005"],
     startDate: "2026-01-01",
     endDate: "2027-01-01",
     deposit: 3000000,
@@ -352,8 +570,9 @@ export const SEED_CONTRACTS = [
   },
   {
     id: "c-002",
-    roomId: "r-002",
+    roomId: "P102",
     tenantId: "t-002",
+    coTenantIds: ["t-007"],
     startDate: "2026-02-01",
     endDate: "2027-02-01",
     deposit: 3500000,
@@ -364,7 +583,7 @@ export const SEED_CONTRACTS = [
   },
   {
     id: "c-003",
-    roomId: "r-003",
+    roomId: "P201",
     tenantId: "t-004",
     startDate: "2026-03-01",
     endDate: "2027-03-01",
@@ -376,7 +595,7 @@ export const SEED_CONTRACTS = [
   },
   {
     id: "c-004",
-    roomId: "r-004",
+    roomId: "P202",
     tenantId: "t-006",
     startDate: "2026-01-15",
     endDate: "2027-01-15",
@@ -388,7 +607,7 @@ export const SEED_CONTRACTS = [
   },
   {
     id: "c-007",
-    roomId: "r-007",
+    roomId: "P302",
     tenantId: "t-011",
     startDate: "2026-04-01",
     endDate: "2027-04-01",
@@ -400,7 +619,7 @@ export const SEED_CONTRACTS = [
   },
   {
     id: "c-008",
-    roomId: "r-008",
+    roomId: "P303",
     tenantId: "t-013",
     startDate: "2026-05-01",
     endDate: "2027-05-01",
@@ -414,7 +633,7 @@ export const SEED_CONTRACTS = [
   // 1 active nhưng sắp hết hạn (endDate 2026-08-01 → còn < 30 ngày)
   {
     id: "c-005",
-    roomId: "r-005",
+    roomId: "P203",
     tenantId: "t-008",
     startDate: "2025-08-01",
     endDate: "2026-08-01",
@@ -428,7 +647,7 @@ export const SEED_CONTRACTS = [
   // 1 expired (r-006 giờ available)
   {
     id: "c-006",
-    roomId: "r-006",
+    roomId: "P301",
     tenantId: "t-010",
     startDate: "2025-01-01",
     endDate: "2026-01-01",
@@ -438,6 +657,16 @@ export const SEED_CONTRACTS = [
     createdAt: "2025-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
   },
+  // Thêm hợp đồng cho 2 phòng thuê mới
+  {
+    id: "c-009", roomId: "P501", tenantId: "t-016", coTenantIds: ["t-017"], startDate: "2026-06-01", endDate: "2027-06-01", deposit: 4200000, roomPrice: 4200000, status: "active", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z"
+  },
+  {
+    id: "c-010", roomId: "P702", tenantId: "t-021", coTenantIds: [], startDate: "2026-06-18", endDate: "2027-06-18", deposit: 3900000, roomPrice: 3900000, status: "active", createdAt: "2026-06-18T00:00:00.000Z", updatedAt: "2026-06-18T00:00:00.000Z"
+  },
+  {
+    id: "c-011", roomId: "P401", tenantId: "t-016", coTenantIds: [], startDate: "2025-05-01", endDate: "2026-05-01", deposit: 2500000, roomPrice: 2500000, status: "expired", createdAt: "2025-05-01T00:00:00.000Z", updatedAt: "2026-05-01T00:00:00.000Z"
+  }
 ];
 
 // ─── DỊCH VỤ (6) ───────────────────────────────────────────────
@@ -512,7 +741,7 @@ export const SEED_METER_READINGS = [
   // ── Tháng 5/2026 ──
   {
     id: "m-001",
-    roomId: "r-001",
+    roomId: "P101",
     month: 5,
     year: 2026,
     electricityOld: 1000,
@@ -524,7 +753,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-002",
-    roomId: "r-002",
+    roomId: "P102",
     month: 5,
     year: 2026,
     electricityOld: 2000,
@@ -536,7 +765,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-003",
-    roomId: "r-003",
+    roomId: "P201",
     month: 5,
     year: 2026,
     electricityOld: 3000,
@@ -548,7 +777,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-004",
-    roomId: "r-004",
+    roomId: "P202",
     month: 5,
     year: 2026,
     electricityOld: 500,
@@ -560,7 +789,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-005",
-    roomId: "r-005",
+    roomId: "P203",
     month: 5,
     year: 2026,
     electricityOld: 1500,
@@ -572,7 +801,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-006",
-    roomId: "r-007",
+    roomId: "P302",
     month: 5,
     year: 2026,
     electricityOld: 800,
@@ -584,7 +813,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-007",
-    roomId: "r-008",
+    roomId: "P303",
     month: 5,
     year: 2026,
     electricityOld: 400,
@@ -598,7 +827,7 @@ export const SEED_METER_READINGS = [
   // ── Tháng 6/2026 ──
   {
     id: "m-008",
-    roomId: "r-001",
+    roomId: "P101",
     month: 6,
     year: 2026,
     electricityOld: 1120,
@@ -610,7 +839,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-009",
-    roomId: "r-002",
+    roomId: "P102",
     month: 6,
     year: 2026,
     electricityOld: 2150,
@@ -622,7 +851,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-010",
-    roomId: "r-003",
+    roomId: "P201",
     month: 6,
     year: 2026,
     electricityOld: 3200,
@@ -634,7 +863,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-011",
-    roomId: "r-004",
+    roomId: "P202",
     month: 6,
     year: 2026,
     electricityOld: 600,
@@ -646,7 +875,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-012",
-    roomId: "r-005",
+    roomId: "P203",
     month: 6,
     year: 2026,
     electricityOld: 1650,
@@ -658,7 +887,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-013",
-    roomId: "r-007",
+    roomId: "P302",
     month: 6,
     year: 2026,
     electricityOld: 980,
@@ -670,7 +899,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-014",
-    roomId: "r-008",
+    roomId: "P303",
     month: 6,
     year: 2026,
     electricityOld: 510,
@@ -684,7 +913,7 @@ export const SEED_METER_READINGS = [
   // ── Tháng 7/2026 ──
   {
     id: "m-015",
-    roomId: "r-001",
+    roomId: "P101",
     month: 7,
     year: 2026,
     electricityOld: 1250,
@@ -696,7 +925,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-016",
-    roomId: "r-002",
+    roomId: "P102",
     month: 7,
     year: 2026,
     electricityOld: 2310,
@@ -708,7 +937,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-017",
-    roomId: "r-003",
+    roomId: "P201",
     month: 7,
     year: 2026,
     electricityOld: 3380,
@@ -720,7 +949,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-018",
-    roomId: "r-004",
+    roomId: "P202",
     month: 7,
     year: 2026,
     electricityOld: 720,
@@ -732,7 +961,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-019",
-    roomId: "r-005",
+    roomId: "P203",
     month: 7,
     year: 2026,
     electricityOld: 1800,
@@ -744,7 +973,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-020",
-    roomId: "r-007",
+    roomId: "P302",
     month: 7,
     year: 2026,
     electricityOld: 1150,
@@ -756,7 +985,7 @@ export const SEED_METER_READINGS = [
   },
   {
     id: "m-021",
-    roomId: "r-008",
+    roomId: "P303",
     month: 7,
     year: 2026,
     electricityOld: 630,
@@ -766,6 +995,9 @@ export const SEED_METER_READINGS = [
     createdAt: "2026-07-14T00:00:00.000Z",
     updatedAt: "2026-07-14T00:00:00.000Z",
   },
+  { id: "m-022", roomId: "P501", month: 6, year: 2026, electricityOld: 100, electricityNew: 150, waterOld: 10, waterNew: 15, createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z" },
+  { id: "m-023", roomId: "P702", month: 6, year: 2026, electricityOld: 200, electricityNew: 240, waterOld: 20, waterNew: 24, createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z" },
+  { id: "m-024", roomId: "P401", month: 5, year: 2026, electricityOld: 300, electricityNew: 350, waterOld: 30, waterNew: 35, createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z" },
 ];
 
 // ─── HÓA ĐƠN (10) ─────────────────────────────────────────────
@@ -776,7 +1008,7 @@ export const SEED_INVOICES = [
   // ── Tháng 5/2026 – 3 hóa đơn ĐÃ THANH TOÁN (paid) ──
   {
     id: "i-001",
-    roomId: "r-001",
+    roomId: "P101",
     month: 5,
     year: 2026,
     roomFee: 3000000,
@@ -798,7 +1030,7 @@ export const SEED_INVOICES = [
   },
   {
     id: "i-002",
-    roomId: "r-002",
+    roomId: "P102",
     month: 5,
     year: 2026,
     roomFee: 3500000,
@@ -820,7 +1052,7 @@ export const SEED_INVOICES = [
   },
   {
     id: "i-003",
-    roomId: "r-003",
+    roomId: "P201",
     month: 5,
     year: 2026,
     roomFee: 4000000,
@@ -844,7 +1076,7 @@ export const SEED_INVOICES = [
   // ── Tháng 6/2026 – đa dạng trạng thái ──
   {
     id: "i-004",
-    roomId: "r-001",
+    roomId: "P101",
     month: 6,
     year: 2026,
     roomFee: 3000000,
@@ -866,7 +1098,7 @@ export const SEED_INVOICES = [
   },
   {
     id: "i-005",
-    roomId: "r-002",
+    roomId: "P102",
     month: 6,
     year: 2026,
     roomFee: 3500000,
@@ -888,7 +1120,7 @@ export const SEED_INVOICES = [
   },
   {
     id: "i-006",
-    roomId: "r-003",
+    roomId: "P201",
     month: 6,
     year: 2026,
     roomFee: 4000000,
@@ -910,7 +1142,7 @@ export const SEED_INVOICES = [
   },
   {
     id: "i-007",
-    roomId: "r-004",
+    roomId: "P202",
     month: 6,
     year: 2026,
     roomFee: 3200000,
@@ -932,7 +1164,7 @@ export const SEED_INVOICES = [
   },
   {
     id: "i-009",
-    roomId: "r-005",
+    roomId: "P203",
     month: 6,
     year: 2026,
     roomFee: 3800000,
@@ -954,7 +1186,7 @@ export const SEED_INVOICES = [
   },
   {
     id: "i-010",
-    roomId: "r-007",
+    roomId: "P302",
     month: 6,
     year: 2026,
     roomFee: 4500000,
@@ -978,7 +1210,7 @@ export const SEED_INVOICES = [
   // ── Tháng 7/2026 – mới tạo, CHƯA THANH TOÁN ──
   {
     id: "i-008",
-    roomId: "r-001",
+    roomId: "P101",
     month: 7,
     year: 2026,
     roomFee: 3000000,
@@ -998,6 +1230,18 @@ export const SEED_INVOICES = [
     createdAt: "2026-07-14T00:00:00.000Z",
     updatedAt: "2026-07-14T00:00:00.000Z",
   },
+  {
+    id: "i-011", roomId: "P501", month: 6, year: 2026, roomFee: 4200000, electricityFee: 175000, waterFee: 100000, otherServicesFee: 280000, totalAmount: 4755000, status: "paid", dueDate: "2026-07-15", paidAmount: 4755000, remainingDebt: 0,
+    serviceDetails: [{ name: "Tiền điện", usage: 50, price: 3500, total: 175000 }, { name: "Tiền nước", usage: 5, price: 20000, total: 100000 }], createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-05T00:00:00.000Z"
+  },
+  {
+    id: "i-012", roomId: "P702", month: 6, year: 2026, roomFee: 3900000, electricityFee: 140000, waterFee: 80000, otherServicesFee: 180000, totalAmount: 4300000, status: "partial", dueDate: "2026-07-15", paidAmount: 2000000, remainingDebt: 2300000,
+    serviceDetails: [{ name: "Tiền điện", usage: 40, price: 3500, total: 140000 }, { name: "Tiền nước", usage: 4, price: 20000, total: 80000 }], createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-10T00:00:00.000Z"
+  },
+  {
+    id: "i-013", roomId: "P401", month: 5, year: 2026, roomFee: 2500000, electricityFee: 175000, waterFee: 100000, otherServicesFee: 180000, totalAmount: 2955000, status: "paid", dueDate: "2026-06-15", paidAmount: 2955000, remainingDebt: 0,
+    serviceDetails: [{ name: "Tiền điện", usage: 50, price: 3500, total: 175000 }, { name: "Tiền nước", usage: 5, price: 20000, total: 100000 }], createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-05T00:00:00.000Z"
+  }
 ];
 
 // ─── THANH TOÁN (8) ────────────────────────────────────────────
@@ -1078,6 +1322,15 @@ export const SEED_PAYMENTS = [
     note: "CK tháng 6 – P.302",
     createdAt: "2026-07-04T00:00:00.000Z",
   },
+  {
+    id: "p-009", invoiceId: "i-011", amount: 4755000, date: "2026-07-05", method: "transfer", note: "Thanh toán T6 - P501", createdAt: "2026-07-05T00:00:00.000Z"
+  },
+  {
+    id: "p-010", invoiceId: "i-012", amount: 2000000, date: "2026-07-10", method: "cash", note: "Trá góp T6 - P702", createdAt: "2026-07-10T00:00:00.000Z"
+  },
+  {
+    id: "p-011", invoiceId: "i-013", amount: 2955000, date: "2026-06-05", method: "transfer", note: "Thanh toán T5 - P401", createdAt: "2026-06-05T00:00:00.000Z"
+  }
 ];
 
 // ─── CÀI ĐẶT ─────────────────────────────────────────────────

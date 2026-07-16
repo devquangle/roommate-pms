@@ -158,6 +158,15 @@ export function createTenant(data) {
     idCard: normalizeIdCard(data.idCard || ''),
     email: (data.email || '').trim(),
     address: (data.address || '').trim(),
+    dob: data.dob || '',
+    gender: data.gender || '',
+    occupation: (data.occupation || '').trim(),
+    licensePlate: (data.licensePlate || '').trim(),
+    vehicleType: (data.vehicleType || '').trim(),
+    emergencyName: (data.emergencyName || '').trim(),
+    emergencyPhone: normalizePhone(data.emergencyPhone || ''),
+    emergencyRelation: (data.emergencyRelation || '').trim(),
+    notes: (data.notes || '').trim(),
     status: TENANT_STATUS.ACTIVE,
   };
 
@@ -193,6 +202,15 @@ export function updateTenant(id, data) {
     idCard: normalizeIdCard(data.idCard || ''),
     email: data.email !== undefined ? (data.email || '').trim() : tenant.email,
     address: data.address !== undefined ? (data.address || '').trim() : tenant.address,
+    dob: data.dob !== undefined ? data.dob : tenant.dob,
+    gender: data.gender !== undefined ? data.gender : tenant.gender,
+    occupation: data.occupation !== undefined ? (data.occupation || '').trim() : tenant.occupation,
+    licensePlate: data.licensePlate !== undefined ? (data.licensePlate || '').trim() : tenant.licensePlate,
+    vehicleType: data.vehicleType !== undefined ? (data.vehicleType || '').trim() : tenant.vehicleType,
+    emergencyName: data.emergencyName !== undefined ? (data.emergencyName || '').trim() : tenant.emergencyName,
+    emergencyPhone: data.emergencyPhone !== undefined ? normalizePhone(data.emergencyPhone || '') : tenant.emergencyPhone,
+    emergencyRelation: data.emergencyRelation !== undefined ? (data.emergencyRelation || '').trim() : tenant.emergencyRelation,
+    notes: data.notes !== undefined ? (data.notes || '').trim() : tenant.notes,
   };
 
   return StorageService.update(KEY, id, changes);

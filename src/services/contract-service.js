@@ -165,6 +165,12 @@ export function filterContracts(filters = {}) {
  * @param {string} data.endDate     - Ngày kết thúc (bắt buộc).
  * @param {number} data.roomPrice   - Giá thuê ghi trên HĐ (>= 0).
  * @param {number} data.deposit     - Tiền cọc (>= 0).
+ * @param {string} [data.status]    - Trạng thái (draft, active).
+ * @param {Array<string>} [data.coTenantIds] - Danh sách người ở cùng.
+ * @param {number} [data.paymentDay] - Ngày thanh toán hàng tháng.
+ * @param {number} [data.vehicles]  - Số xe.
+ * @param {string} [data.terms]     - Điều khoản bổ sung.
+ * @param {string} [data.notes]     - Ghi chú.
  * @returns {Object} Hợp đồng vừa tạo.
  * @throws {Error} Nếu dữ liệu không hợp lệ.
  */
@@ -190,15 +196,20 @@ export function createContract(data) {
     endDate: data.endDate,
     roomPrice: toNumberOrDefault(data.roomPrice, 0),
     deposit: toNumberOrDefault(data.deposit, 0),
-    status: CONTRACT_STATUS.ACTIVE,
+    status: data.status || CONTRACT_STATUS.ACTIVE,
+    coTenantIds: Array.isArray(data.coTenantIds) ? data.coTenantIds : [],
+    paymentDay: toNumberOrDefault(data.paymentDay, 1),
+    vehicles: toNumberOrDefault(data.vehicles, 0),
+    terms: data.terms || '',
+    notes: data.notes || '',
   };
 
   // Ghi hợp đồng trước
   const created = StorageService.create(KEY, newContract);
 
-  // Đồng bộ trạng thái phòng → rented
-  if (room && room.status !== ROOM_STATUS.RENTED) {
-    updateRoomStatus(data.roomId, ROOM_STATUS.RENTED);
+  // Đồng bộ trạng thái phòng → rented (chỉ khi HĐ là active)
+  if (room && room.status !== ROOM_STATUS.RENTED && newContract.status === CONTRACT_STATUS.ACTIVE) {
+    updateRoomStatus(room.id, ROOM_STATUS.RENTED);
   }
 
   return created;
@@ -258,9 +269,31 @@ export function updateContract(id, data) {
     endDate: merged.endDate,
     roomPrice: toNumberOrDefault(merged.roomPrice, contract.roomPrice),
     deposit: toNumberOrDefault(merged.deposit, contract.deposit),
+    status: data.status || contract.status,
+    coTenantIds: Array.isArray(data.coTenantIds) ? data.coTenantIds : contract.coTenantIds,
+    paymentDay: data.paymentDay !== undefined ? toNumberOrDefault(data.paymentDay, 1) : contract.paymentDay,
+    vehicles: data.vehicles !== undefined ? toNumberOrDefault(data.vehicles, 0) : contract.vehicles,
+    terms: data.terms !== undefined ? data.terms : contract.terms,
+    notes: data.notes !== undefined ? data.notes : contract.notes,
   };
 
-  return StorageService.update(KEY, id, changes);
+  const updated = StorageService.update(KEY, id, changes);
+
+  // Đồng bộ trạng thái phòng nếu đổi phòng hoặc kích hoạt HĐ
+  if (changes.status === CONTRACT_STATUS.ACTIVE) {
+    if (contract.roomId !== changes.roomId) {
+      // Phòng cũ -> available (nếu không còn HĐ active nào khác)
+      if (!roomHasOtherActiveContracts(contract.roomId, id)) {
+        updateRoomStatus(contract.roomId, ROOM_STATUS.AVAILABLE);
+      }
+      // Phòng mới -> rented
+      updateRoomStatus(changes.roomId, ROOM_STATUS.RENTED);
+    } else {
+      updateRoomStatus(changes.roomId, ROOM_STATUS.RENTED);
+    }
+  }
+
+  return updated;
 }
 
 // ─── ACTIVATE ──────────────────────────────────────────────────

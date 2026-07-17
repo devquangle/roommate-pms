@@ -34,7 +34,8 @@ const routes = {
   'payments':   { title: 'Thanh toán',          render: renderPaymentsPage },
   'debts':      { title: 'Công nợ',             render: renderDebtsPage },
   'reports':    { title: 'Báo cáo',             render: renderReportsPage },
-  'settings':   { title: 'Cài đặt & Sao lưu',  render: renderSettingsPage },
+  'backup':     { title: 'Sao lưu dữ liệu',    render: renderSettingsPage },
+  'settings':   { title: 'Cài đặt',             render: renderSettingsPage },
 };
 
 /**

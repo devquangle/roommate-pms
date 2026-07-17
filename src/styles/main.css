@@ -2,6 +2,7 @@
 body {
   background-color: #f8f9fa;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
 }
 
 #app-root {
@@ -12,22 +13,88 @@ body {
 
 .sidebar {
   width: 250px;
-  background-color: #343a40;
+  background-color: #212529;
   color: #fff;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
+  transition: width 0.25s ease-in-out, transform 0.25s ease-in-out;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.sidebar-header {
+  height: 60px;
+  padding: 0 1.25rem !important;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-header i {
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+  margin-right: 0.75rem;
+  transition: margin-right 0.25s ease-in-out;
 }
 
 .sidebar .nav-link {
-  color: #adb5bd;
+  color: #c2c7d0;
   padding: 0.75rem 1.25rem;
+  font-weight: 500;
+  transition: background-color 0.25s ease;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar .nav-link i {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+  margin-right: 0.75rem;
+  transition: margin-right 0.25s ease-in-out;
 }
 
 .sidebar .nav-link:hover,
 .sidebar .nav-link.active {
   color: #fff;
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(255,255,255,0.08);
+}
+
+.sidebar .menu-text,
+.sidebar .sidebar-title {
+  display: inline-block;
+  max-width: 180px;
+  opacity: 1;
+  transition: max-width 0.25s ease-in-out, opacity 0.2s ease-in-out, margin 0.25s ease-in-out;
+  vertical-align: middle;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar .nav-link.active {
+  border-left: 3px solid #0d6efd;
+  background-color: rgba(13,110,253,0.15);
+}
+
+/* Sidebar collapsed state */
+@media (min-width: 769px) {
+  .sidebar.collapsed {
+    width: 70px;
+  }
+  .sidebar.collapsed .menu-text,
+  .sidebar.collapsed .sidebar-title {
+    max-width: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+  }
+  .sidebar.collapsed .sidebar-header i,
+  .sidebar.collapsed .nav-link i {
+    margin-right: 0 !important;
+  }
 }
 
 .main-content {
@@ -35,6 +102,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background-color: #f4f6f9;
 }
 
 .content-area {
@@ -43,12 +111,30 @@ body {
   overflow-y: auto;
 }
 
+/* Topbar styles */
+.navbar {
+  z-index: 10;
+  height: 60px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+}
+.no-caret::after {
+  display: none !important;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
     height: 100%;
+    top: 0;
+    left: 0;
     z-index: 1040;
     transform: translateX(-100%);
+    width: 250px;
   }
   .sidebar.show {
     transform: translateX(0);

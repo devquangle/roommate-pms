@@ -47,7 +47,8 @@ const ITEMS_PER_PAGE = 8;
 // ─── MAIN RENDER ───────────────────────────────────────────────
 
 export function renderContractsPage(container) {
-  currentKeyword = '';
+  const urlParams = new URLSearchParams(window.location.search);
+  currentKeyword = urlParams.get('search') || '';
   currentFilters = {};
   currentPage = 1;
 
@@ -392,6 +393,7 @@ function bindEvents(container) {
   // Search
   const searchInput = document.getElementById('contractSearch');
   if (searchInput) {
+    searchInput.value = currentKeyword;
     let debounce;
     searchInput.addEventListener('input', () => {
       clearTimeout(debounce);

@@ -7,6 +7,7 @@ import { formatCurrency } from '../utils/currency-utils.js';
 import { ROOM_STATUS, CONTRACT_STATUS } from '../constants/statuses.js';
 import { openTenantForm } from './tenant-form.js';
 import { hasOverlappingContract } from '../business/contract-utils.js';
+import { initSearchableSelect } from './searchable-select.js';
 
 export function openContractForm({ contract = null, onSave }) {
   const isEdit = !!contract;
@@ -210,7 +211,13 @@ export function openContractForm({ contract = null, onSave }) {
 
   // Refs
   const selectRoom = document.getElementById('contractRoom');
+  if (selectRoom) {
+    initSearchableSelect(selectRoom);
+  }
   const selectTenant = document.getElementById('contractTenant');
+  if (selectTenant) {
+    initSearchableSelect(selectTenant);
+  }
   const coTenantSelect = document.getElementById('coTenantSelect');
   const coTenantListEl = document.getElementById('coTenantList');
   const coTenantWarning = document.getElementById('coTenantWarning');
@@ -303,6 +310,8 @@ export function openContractForm({ contract = null, onSave }) {
     const available = allTenants.filter(t => t.id !== mainT && !selectedCoTenants.includes(t.id));
     coTenantSelect.innerHTML = '<option value="">-- Thêm người ở cùng --</option>' + 
       available.map(t => `<option value="${t.id}">${t.fullName} – ${t.phone || 'N/A'}</option>`).join('');
+    
+    initSearchableSelect(coTenantSelect);
   }
 
   function renderCoTenantList() {
@@ -369,6 +378,7 @@ export function openContractForm({ contract = null, onSave }) {
             option.textContent = `${created.fullName} - ${created.phone}`;
             selectTenant.appendChild(option);
             selectTenant.value = created.id;
+            initSearchableSelect(selectTenant);
             
             // Restore modal
             bsModal.show();

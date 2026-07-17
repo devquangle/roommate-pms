@@ -21,11 +21,21 @@ export function initSearchableSelect(selectElement) {
 
   // Wrapper chính
   const wrapper = document.createElement('div');
-  wrapper.className = 'dropdown d-inline-block';
-  if (selectElement.style.width) {
-    wrapper.style.width = selectElement.style.width;
-  } else if (selectElement.classList.contains('w-100')) {
-    wrapper.className += ' w-100';
+  
+  const hasSpecificWidth = selectElement.style.width && selectElement.style.width !== '100%';
+  const isFullWidth = !hasSpecificWidth && (
+    selectElement.classList.contains('form-select') || 
+    selectElement.classList.contains('form-control') || 
+    selectElement.classList.contains('w-100')
+  );
+
+  if (isFullWidth) {
+    wrapper.className = 'dropdown w-100';
+  } else {
+    wrapper.className = 'dropdown d-inline-block';
+    if (selectElement.style.width) {
+      wrapper.style.width = selectElement.style.width;
+    }
   }
 
   // Nút kích hoạt Dropdown
@@ -35,7 +45,7 @@ export function initSearchableSelect(selectElement) {
   button.dataset.bsToggle = 'dropdown';
   button.dataset.bsBoundary = 'viewport'; // Giúp tránh bị cắt khuất bởi các container overflow
   button.style.minWidth = '140px';
-  if (selectElement.classList.contains('w-100')) {
+  if (isFullWidth) {
     button.className += ' w-100';
   }
 

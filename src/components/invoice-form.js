@@ -11,6 +11,7 @@ import { formatCurrency } from '../utils/currency-utils.js';
 import { showToast } from './toast.js';
 import { initSearchableSelect } from './searchable-select.js';
 import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
+import { renderErrorState } from './error-state.js';
 
 let modalInstance = null;
 let containerEl = null;
@@ -214,7 +215,11 @@ function renderForm() {
     <!-- Cảnh báo -->
     ${state.roomId ? `
       ${(!state.isEdit && state.existingInvoice) ? `<div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle-fill me-2"></i> Đã tồn tại hóa đơn (Mã: ${state.existingInvoice.id}) cho phòng này trong tháng ${state.month}/${state.year}.</div>` : ''}
-      ${!state.contract ? `<div class="alert alert-warning py-2"><i class="bi bi-exclamation-triangle-fill me-2"></i> Phòng này chưa có hợp đồng hiệu lực trong tháng ${state.month}/${state.year}.</div>` : ''}
+      ${!state.contract ? `<div class="mb-3">${renderErrorState('invoice-creation-failed', {
+        showHomeBtn: false,
+        actionId: 'btnErrorActionCheckContracts',
+        actionText: '📝 Kiểm tra hợp đồng'
+      })}</div>` : ''}
       ${(!state.isEdit && !state.reading) ? `<div class="alert alert-warning py-2"><i class="bi bi-exclamation-triangle-fill me-2"></i> Chưa chốt chỉ số điện nước cho tháng ${state.month}/${state.year}. (Tiền điện, nước sẽ tính bằng 0).</div>` : ''}
     ` : '<div class="alert alert-info py-2">Vui lòng chọn phòng để tải dữ liệu hóa đơn.</div>'}
 
@@ -289,6 +294,24 @@ function renderForm() {
 
   document.getElementById('icm-body').innerHTML = formHtml;
   bindFormEvents();
+
+  // Cập nhật trạng thái nút lưu nếu không có hợp đồng
+  const btnDraft = document.getElementById('icm-btn-draft');
+  const btnFinalize = document.getElementById('icm-btn-finalize');
+  if (btnDraft && btnFinalize) {
+    const disabled = !!state.roomId && !state.contract;
+    btnDraft.disabled = disabled;
+    btnFinalize.disabled = disabled;
+  }
+
+  // Gán sự kiện click cho nút Error State nếu hiển thị
+  document.getElementById('btnErrorActionCheckContracts')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    modalInstance?.hide();
+    import('../router.js').then(router => {
+      router.navigateTo('contracts');
+    });
+  });
 
   // Kích hoạt searchable-select cho ô chọn phòng (nếu không ở chế độ readonly)
   if (!isReadOnly) {

@@ -2,6 +2,61 @@
 
 import { getCurrentISODate } from '../utils/date-utils.js';
 
+// Hàm xử lý khi không đọc/ghi được LocalStorage
+function handleStorageError(error) {
+  console.error("LocalStorage Error:", error);
+  const root = document.getElementById('page-content') || document.getElementById('app-root');
+  if (root) {
+    import('../components/error-state.js').then(module => {
+      root.innerHTML = module.renderErrorState('storage-error', {
+        customMsg: error.message,
+        showHomeBtn: false,
+        actionId: 'btnErrorActionRetryStorage',
+        actionText: '🔄 Thử lại'
+      });
+      document.getElementById('btnErrorActionRetryStorage')?.addEventListener('click', () => {
+        window.location.reload();
+      });
+    });
+  }
+}
+
+function safeGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    handleStorageError(error);
+    throw error;
+  }
+}
+
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    handleStorageError(error);
+    throw error;
+  }
+}
+
+function safeRemoveItem(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    handleStorageError(error);
+    throw error;
+  }
+}
+
+function safeClear() {
+  try {
+    localStorage.clear();
+  } catch (error) {
+    handleStorageError(error);
+    throw error;
+  }
+}
+
 /**
  * Parse chuỗi JSON an toàn.
  * Trả về fallback nếu value là null/undefined hoặc JSON không hợp lệ.
@@ -29,9 +84,8 @@ export function safeParse(value, fallback = []) {
  * @returns {Array<Object>} Mảng các bản ghi.
  */
 export function getAll(key) {
-  const raw = localStorage.getItem(key);
+  const raw = safeGetItem(key);
   const data = safeParse(raw, []);
-  // Đảm bảo luôn trả về mảng
   return Array.isArray(data) ? data : [];
 }
 
@@ -77,7 +131,7 @@ export function create(key, item) {
   };
 
   items.push(newItem);
-  localStorage.setItem(key, JSON.stringify(items));
+  safeSetItem(key, JSON.stringify(items));
 
   return newItem;
 }
@@ -112,7 +166,7 @@ export function update(key, id, changes) {
   };
 
   items[index] = updatedItem;
-  localStorage.setItem(key, JSON.stringify(items));
+  safeSetItem(key, JSON.stringify(items));
 
   return updatedItem;
 }
@@ -126,25 +180,21 @@ export function update(key, id, changes) {
  */
 export function remove(key, id) {
   const items = getAll(key);
-  const filtered = items.filter(item => item.id !== id);
+  const index = items.findIndex(item => item.id === id);
 
-  if (filtered.length === items.length) {
-    return false;
-  }
+  if (index === -1) return false;
 
-  localStorage.setItem(key, JSON.stringify(filtered));
+  items.splice(index, 1);
+  safeSetItem(key, JSON.stringify(items));
   return true;
 }
 
 /**
- * Kiểm tra xem có bản ghi nào thỏa điều kiện hay không.
+ * Kiểm tra xem có bản ghi nào thỏa mãn điều kiện hay không.
  *
  * @param {string} key - Khóa LocalStorage.
- * @param {function(Object): boolean} predicate - Hàm kiểm tra điều kiện.
- * @returns {boolean} true nếu tồn tại ít nhất một bản ghi thỏa điều kiện.
- *
- * @example
- * exists('rooms', room => room.name === 'P.101') // true hoặc false
+ * @param {Function} predicate - Hàm kiểm tra (nhận vào record, trả về boolean).
+ * @returns {boolean} true nếu có ít nhất 1 bản ghi thỏa mãn.
  */
 export function exists(key, predicate) {
   if (typeof predicate !== 'function') {
@@ -165,7 +215,7 @@ export function replaceAll(key, items) {
   if (!Array.isArray(items)) {
     throw new Error('Dữ liệu phải là một mảng.');
   }
-  localStorage.setItem(key, JSON.stringify(items));
+  safeSetItem(key, JSON.stringify(items));
 }
 
 /**
@@ -174,14 +224,14 @@ export function replaceAll(key, items) {
  * @param {string} key - Khóa LocalStorage cần xóa.
  */
 export function clearKey(key) {
-  localStorage.removeItem(key);
+  safeRemoveItem(key);
 }
 
 /**
  * Xóa toàn bộ LocalStorage.
  */
 export function clearAll() {
-  localStorage.clear();
+  safeClear();
 }
 
 /**
@@ -192,10 +242,14 @@ export function clearAll() {
  */
 export function exportAll() {
   const data = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    const raw = localStorage.getItem(key);
-    data[key] = safeParse(raw, raw);
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const raw = safeGetItem(key);
+      data[key] = safeParse(raw, raw);
+    }
+  } catch (error) {
+    handleStorageError(error);
   }
   return data;
 }
@@ -216,6 +270,6 @@ export function importAll(data) {
   const keys = Object.keys(data);
   for (const key of keys) {
     const value = data[key];
-    localStorage.setItem(key, JSON.stringify(value));
+    safeSetItem(key, JSON.stringify(value));
   }
 }

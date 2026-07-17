@@ -425,8 +425,26 @@ export function openContractForm({ contract = null, onSave }) {
       }
       bsModal.hide();
     } catch (err) {
-      errorEl.textContent = err.message;
-      errorEl.classList.remove('d-none');
+      if (err.message.includes('trùng thời gian') || err.message.includes('trùng') || err.message.includes('overlap')) {
+        import('./error-state.js').then(module => {
+          errorEl.innerHTML = module.renderErrorState('overlapping-contract', {
+            customMsg: err.message,
+            showHomeBtn: false,
+            actionId: 'btnErrorActionAdjustDates',
+            actionText: '📅 Thay đổi thời gian thuê'
+          });
+          errorEl.classList.remove('d-none');
+          
+          setTimeout(() => {
+            document.getElementById('btnErrorActionAdjustDates')?.addEventListener('click', () => {
+              startDateEl.focus();
+            });
+          }, 0);
+        });
+      } else {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('d-none');
+      }
       // Scroll to top
       document.querySelector('.modal-body').scrollTo(0, 0);
     }

@@ -34,9 +34,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (needReset) {
-    resetToSeedData();
+    renderLayout(root);
+    const pageContent = document.getElementById('page-content');
+    const headerTitle = document.getElementById('header-title');
+    if (headerTitle) headerTitle.textContent = 'Dữ liệu bị lỗi';
+    if (pageContent) {
+      import('./components/error-state.js').then(module => {
+        pageContent.innerHTML = module.renderErrorState('corrupted-data', {
+          showHomeBtn: false,
+          actionId: 'btnErrorActionRestoreSeed',
+          actionText: '🔄 Khôi phục dữ liệu mẫu gốc'
+        });
+        document.getElementById('btnErrorActionRestoreSeed')?.addEventListener('click', () => {
+          resetToSeedData();
+          window.location.reload();
+        });
+      });
+    }
   } else {
     seedIfEmpty();
+    renderLayout(root);
+    initRouter();
   }
 
   // Debug: log LocalStorage contents
@@ -51,10 +69,4 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   })();
-
-  // 2. Render khung giao diện (sidebar, header, content area)
-  renderLayout(root);
-
-  // 3. Khởi tạo router – lắng nghe popstate và render trang đầu tiên
-  initRouter();
 });

@@ -5,6 +5,7 @@ import { getRoomById } from '../services/room-service.js';
 import { getTenantById } from '../services/tenant-service.js';
 import { getActiveContractByRoom, getContractById } from '../services/contract-service.js';
 import { formatCurrency } from '../utils/currency-utils.js';
+import { renderErrorState } from './error-state.js';
 
 /**
  * Mở modal ghi nhận giao dịch thanh toán.
@@ -301,8 +302,20 @@ export function openPaymentForm({ defaultInvoiceId = null, onSave }) {
       }
       bsModal.hide();
     } catch (err) {
-      errorEl.textContent = err.message;
+      errorEl.className = 'p-0 mb-3 border-0 bg-transparent';
+      errorEl.innerHTML = renderErrorState('payment-failed', {
+        customMsg: err.message,
+        showHomeBtn: false,
+        actionId: 'btnErrorActionRetryPayment',
+        actionText: '✏️ Nhập lại số tiền'
+      });
       errorEl.classList.remove('d-none');
+
+      setTimeout(() => {
+        document.getElementById('btnErrorActionRetryPayment')?.addEventListener('click', () => {
+          document.getElementById('payAmount')?.focus();
+        });
+      }, 0);
     }
   });
 

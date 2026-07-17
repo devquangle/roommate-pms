@@ -18,6 +18,7 @@ import {
 } from '../services/backup-service.js';
 import { validateBackupData } from '../business/import-validator.js';
 import { showToast } from '../components/toast.js';
+import { renderErrorState } from '../components/error-state.js';
 import {
   SEED_ROOMS,
   SEED_TENANTS,
@@ -394,11 +395,20 @@ function bindEvents() {
         const checkResult = validateBackupData(parsed);
 
         if (!checkResult.valid) {
-          fileInfo.className = 'alert alert-danger py-2 px-3 small mb-3';
-          fileInfo.innerHTML = `
-            <strong>❌ Cấu trúc file bị lỗi hoặc không khớp định dạng RoomMate:</strong><br>
-            ${checkResult.errors.map(err => `• ${err}`).join('<br>')}
-          `;
+          fileInfo.className = 'p-0 mb-3 border-0 bg-transparent';
+          fileInfo.innerHTML = renderErrorState('invalid-import', {
+            customMsg: checkResult.errors.join(' | '),
+            showHomeBtn: false,
+            actionId: 'btnErrorActionResetImport',
+            actionText: '📁 Chọn file khác'
+          });
+          
+          setTimeout(() => {
+            document.getElementById('btnErrorActionResetImport')?.addEventListener('click', () => {
+              document.getElementById('importFileInput')?.click();
+            });
+          }, 0);
+
           btnImportSubmit.disabled = true;
           parsedBackupData = null;
           return;

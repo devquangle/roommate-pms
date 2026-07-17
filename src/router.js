@@ -19,6 +19,7 @@ import { renderPaymentsPage } from './pages/payments-page.js';
 import { renderDebtsPage } from './pages/debts-page.js';
 import { renderReportsPage } from './pages/reports-page.js';
 import { renderSettingsPage } from './pages/settings-page.js';
+import { renderErrorState } from './components/error-state.js';
 
 /**
  * Bảng định tuyến: mỗi key là path segment,
@@ -44,13 +45,18 @@ const routes = {
  * Render trang 404 khi không tìm thấy route.
  */
 function renderNotFoundPage(container) {
-  container.innerHTML = `
-    <div class="d-flex flex-column align-items-center justify-content-center"  data-testid="not-found-page">
-      <h1 class="display-1 text-muted">404</h1>
-      <p class="lead text-muted">Trang bạn tìm không tồn tại.</p>
-      <a href="/dashboard" class="btn btn-primary mt-3" data-link data-testid="btn-back-dashboard">Về Dashboard</a>
-    </div>
-  `;
+  container.innerHTML = renderErrorState('page-not-found', {
+    showHomeBtn: false,
+    actionId: 'btnErrorActionGoHome',
+    actionText: '🏠 Quay lại Dashboard'
+  });
+
+  setTimeout(() => {
+    document.getElementById('btnErrorActionGoHome')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigateTo('dashboard');
+    });
+  }, 0);
 }
 
 /**

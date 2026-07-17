@@ -154,12 +154,7 @@ body {
   }
 }
 
-/* Fix table dropdown overflow */
-@media (min-width: 992px) {
-  .table-responsive {
-    overflow: visible !important;
-  }
-}
+
 
 /* Custom styles for Searchable Select options scrollbar */
 .searchable-select-options-container::-webkit-scrollbar {

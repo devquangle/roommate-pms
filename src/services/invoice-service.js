@@ -75,7 +75,7 @@ function getActiveContractForRoomInMonth(roomId, month, year) {
  * @returns {{ serviceDetails: Object[], electricityFee: number, waterFee: number, otherServicesFee: number }}
  */
 function buildServiceSnapshot({ reading, personCount, vehicleCount }) {
-  const serviceConfigs = StorageService.getAll(SERVICES_KEY).filter(s => s.status === 'active');
+  const serviceConfigs = StorageService.getAll(SERVICES_KEY).filter(s => s.status !== 'inactive');
   const serviceDetails = [];
 
   let electricityFee = 0;
@@ -296,7 +296,7 @@ export function generateInvoiceForRoom(roomId, month, year = new Date().getFullY
 
   // 5. Tính số người và số xe
   const personCount = 1 + (contract.coTenantIds ? contract.coTenantIds.length : 0);
-  const vehicleCount = 1; // Mặc định 1 xe mỗi phòng
+  const vehicleCount = Number(contract.vehicles) || 0;
 
   // 6. Lấy dịch vụ đang áp dụng → lưu snapshot
   const { serviceDetails, electricityFee, waterFee, otherServicesFee } =

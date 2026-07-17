@@ -5,6 +5,9 @@ import { getTenantById } from '../services/tenant-service.js';
 import { getActiveContractByRoom } from '../services/contract-service.js';
 import { formatCurrency } from '../utils/currency-utils.js';
 import { formatDateToDisplay } from '../utils/date-utils.js';
+import { openPaymentForm } from './payment-form.js';
+import { createPayment, getPaymentsByInvoice } from '../services/payment-service.js';
+import { showToast } from './toast.js';
 
 // ─── Thông tin nhà trọ mặc định (có thể mở rộng lấy từ appSettings sau) ───
 const PROPERTY_INFO = {
@@ -56,6 +59,7 @@ export function openInvoiceDetail(invoice) {
   const serviceDetails = invoice.serviceDetails || [];
   const subtotal = invoice.roomFee + invoice.electricityFee + invoice.waterFee + invoice.otherServicesFee;
   const invoiceIdShort = invoice.id.substring(0, 8).toUpperCase();
+  const payments = getPaymentsByInvoice(invoice.id) || [];
 
   container.innerHTML = `
     <div class="modal fade" id="invoiceDetailModal" tabindex="-1" aria-hidden="true" data-testid="invoice-detail-modal">
@@ -70,7 +74,8 @@ export function openInvoiceDetail(invoice) {
           </div>
 
           <!-- Vùng in hóa đơn A4 -->
-          <div class="modal-body" id="invoicePrintArea">
+          <div class="modal-body p-0">
+            <div id="invoicePrintArea" class="p-4 bg-white">
 
             <!-- ═══════ HEADER IN ═══════ -->
             <div class="invoice-print-header">
@@ -220,12 +225,118 @@ export function openInvoiceDetail(invoice) {
 
           </div>
 
+          <!-- ═══════ PHẦN THÔNG TIN BỔ SUNG (CHỈ XEM TRÊN SCREEN - KHÔNG IN) ═══════ -->
+          <div class="d-print-none border-top bg-light p-4">
+            <div class="row g-4">
+              <!-- Cột trái: Lịch sử thanh toán & Ghi chú -->
+              <div class="col-md-7">
+                <!-- Lịch sử thanh toán -->
+                <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-clock-history me-2"></i>Lịch sử thanh toán</h6>
+                ${payments.length > 0 ? `
+                  <div class="table-responsive mb-4 shadow-sm bg-white rounded">
+                    <table class="table table-sm table-hover align-middle small mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Ngày đóng</th>
+                          <th>Hình thức</th>
+                          <th class="text-end">Số tiền</th>
+                          <th>Ghi chú</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${payments.map(p => `
+                          <tr>
+                            <td>${formatDateToDisplay(p.date)}</td>
+                            <td>${p.method === 'cash' ? 'Tiền mặt' : 'Chuyển khoản'}</td>
+                            <td class="text-end fw-bold text-success">${formatCurrency(p.amount)}</td>
+                            <td class="text-muted text-wrap" style="max-width: 150px;">${p.note || '—'}</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                ` : `
+                  <p class="text-muted small fst-italic mb-4">Chưa có giao dịch thanh toán nào được ghi nhận cho hóa đơn này.</p>
+                `}
+
+                <!-- Ghi chú nội bộ / ghi chú hóa đơn -->
+                <h6 class="fw-bold mb-2 text-primary"><i class="bi bi-chat-left-text me-2"></i>Ghi chú hóa đơn</h6>
+                <div class="p-3 bg-white border rounded small text-dark">
+                  ${invoice.note || '<span class="text-muted fst-italic">Không có ghi chú.</span>'}
+                </div>
+              </div>
+
+              <!-- Cột phải: Timeline trạng thái -->
+              <div class="col-md-5 border-start-md">
+                <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-activity me-2"></i>Timeline trạng thái</h6>
+                <div class="invoice-timeline">
+                  <!-- Step 1: Lập bản nháp -->
+                  <div class="timeline-item completed">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                      <h6 class="mb-1 small fw-bold">Lập bản nháp</h6>
+                      <span class="text-muted d-block" style="font-size: 0.75rem;">
+                        Hoàn thành lúc ${invoice.createdAt ? formatDateToDisplay(invoice.createdAt) : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <!-- Step 2: Chốt hóa đơn -->
+                  <div class="timeline-item ${invoice.status !== 'draft' ? 'completed' : 'pending'}">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                      <h6 class="mb-1 small fw-bold">Chốt hóa đơn</h6>
+                      <span class="text-muted d-block" style="font-size: 0.75rem;">
+                        ${invoice.status !== 'draft' 
+                          ? 'Đã phát hành hóa đơn và tính công nợ' 
+                          : 'Đang chờ chốt phát hành'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Step 3: Thanh toán / Hủy bỏ -->
+                  ${invoice.status === 'cancelled' ? `
+                    <div class="timeline-item cancelled">
+                      <div class="timeline-marker"></div>
+                      <div class="timeline-content">
+                        <h6 class="mb-1 small fw-bold text-danger">Hủy hóa đơn</h6>
+                        <span class="text-muted d-block" style="font-size: 0.75rem;">Hóa đơn đã bị hủy bỏ</span>
+                      </div>
+                    </div>
+                  ` : `
+                    <div class="timeline-item ${invoice.status === 'paid' ? 'completed' : (invoice.status === 'partial' ? 'active' : 'pending')}">
+                      <div class="timeline-marker"></div>
+                      <div class="timeline-content">
+                        <h6 class="mb-1 small fw-bold">Thanh toán</h6>
+                        <span class="text-muted d-block" style="font-size: 0.75rem;">
+                          ${invoice.status === 'paid' 
+                            ? 'Đã hoàn tất thanh toán hóa đơn' 
+                            : (invoice.status === 'partial' 
+                                ? `Đang thanh toán (Còn nợ: ${formatCurrency(invoice.remainingDebt)})` 
+                                : 'Chờ thanh toán')}
+                        </span>
+                      </div>
+                    </div>
+                  `}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
           <!-- Footer modal (không in) -->
           <div class="modal-footer justify-content-between d-print-none">
             <button type="button" class="btn btn-outline-dark" id="btnPrintInvoice" data-testid="btn-print-invoice">
               <i class="bi bi-printer me-1"></i> In hóa đơn
             </button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-testid="btn-detail-close">Đóng</button>
+            <div>
+              ${(invoice.status === 'unpaid' || invoice.status === 'partial') ? `
+                <button type="button" class="btn btn-success me-2" id="btnDetailPay" data-testid="btn-detail-pay">
+                  <i class="bi bi-credit-card me-1"></i> Ghi nhận thanh toán
+                </button>
+              ` : ''}
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-testid="btn-detail-close">Đóng</button>
+            </div>
           </div>
         </div>
       </div>
@@ -248,6 +359,23 @@ export function openInvoiceDetail(invoice) {
       window.print();
       
       document.body.removeChild(printContainer);
+    });
+
+    // Xử lý sự kiện click Ghi nhận thanh toán
+    document.getElementById('btnDetailPay')?.addEventListener('click', () => {
+      // Ẩn modal chi tiết hóa đơn trước để dọn dẹp backdrop và lớp modal-open của body
+      modalEl.addEventListener('hidden.bs.modal', () => {
+        openPaymentForm({
+          defaultInvoiceId: invoice.id,
+          onSave: (paymentData) => {
+            createPayment(paymentData);
+            showToast('Ghi nhận giao dịch đóng tiền thành công!', 'success');
+            // Phát sự kiện để cập nhật lại danh sách hóa đơn bên dưới
+            document.dispatchEvent(new CustomEvent('invoices-updated'));
+          }
+        });
+      }, { once: true });
+      bsModal.hide();
     });
 
     modalEl.addEventListener('hidden.bs.modal', () => {

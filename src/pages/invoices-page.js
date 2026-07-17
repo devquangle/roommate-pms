@@ -41,7 +41,7 @@ let currentRoomId = '';
 let currentStatus = '';
 let currentKeyword = '';
 let currentPage = 1;
-const itemsPerPage = 10;
+const itemsPerPage = 8;
 
 export function renderInvoicesPage(container) {
   const rooms = getRooms();
@@ -153,19 +153,13 @@ export function renderInvoicesPage(container) {
       <!-- Bảng danh sách hóa đơn -->
       <div class="card border-0 shadow-sm rounded">
         <div class="table-responsive" >
-          <table class="table table-hover align-middle mb-0" data-testid="invoices-table">
+          <table class="table table-hover align-middle mb-0 text-nowrap" data-testid="invoices-table">
             <thead class="table-light border-bottom">
               <tr>
                 <th>Mã hóa đơn</th>
-                <th>Phòng</th>
-                <th>Người thuê</th>
+                <th>Phòng & Người thuê</th>
                 <th class="text-center">Tháng</th>
-                <th class="text-end">Tiền phòng</th>
-                <th class="text-end">Điện nước</th>
-                <th class="text-end">Dịch vụ</th>
-                <th class="text-end">Tổng tiền</th>
-                <th class="text-end">Đã trả</th>
-                <th class="text-end">Còn nợ</th>
+                <th style="min-width: 180px;">Chi tiết thanh toán</th>
                 <th class="text-center" style="min-width: 100px;">Hạn thanh toán</th>
                 <th class="text-center">Trạng thái</th>
                 <th class="text-end" style="min-width: 140px;">Thao tác</th>
@@ -311,6 +305,13 @@ function renderInvoicesList() {
 
   let list = filterInvoices(filters);
 
+  // Sắp xếp theo ngày tạo (createdAt) giảm dần (mới nhất lên trước)
+  list.sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return timeB - timeA;
+  });
+
   // Tìm theo mã hoặc tên phòng
   if (currentKeyword) {
     const kw = currentKeyword.toLowerCase();
@@ -399,20 +400,64 @@ function renderInvoicesList() {
             ${item.id.substring(0, 8).toUpperCase()}…
           </a>
         </td>
-        <td><strong>${roomName.startsWith('Phòng') ? roomName : 'Phòng ' + roomName}</strong></td>
-        <td>${tenantName}</td>
+        <td>
+          <div class="fw-bold text-dark">${roomName.startsWith('Phòng') ? roomName : 'Phòng ' + roomName}</div>
+          <div class="text-muted small">${tenantName}</div>
+        </td>
         <td class="text-center">Tháng ${item.month}/${item.year}</td>
-        <td class="text-end text-dark">${formatCurrency(roomFee)}</td>
-        <td class="text-end text-dark">${formatCurrency(utilitiesFee)}</td>
-        <td class="text-end text-dark">${formatCurrency(servicesFee)}</td>
-        <td class="text-end fw-bold text-primary">${formatCurrency(item.totalAmount)}</td>
-        <td class="text-end text-success">${formatCurrency(item.paidAmount)}</td>
-        <td class="text-end text-danger">${formatCurrency(item.remainingDebt)}</td>
+        <td style="white-space: normal; vertical-align: top;">
+          <!-- Bản thu gọn (Hiển thị mặc định) -->
+          <div id="collapsed-${item.id}">
+            <div class="d-flex justify-content-between small fw-bold mb-1 text-primary text-nowrap">
+              <span>Tổng:</span>
+              <span class="ms-3">${formatCurrency(item.totalAmount)}</span>
+            </div>
+            <div class="d-flex justify-content-between small text-danger fw-bold text-nowrap">
+              <span>Nợ:</span>
+              <span class="ms-3">${formatCurrency(item.remainingDebt)}</span>
+            </div>
+          </div>
+
+          <!-- Bản đầy đủ (Ẩn mặc định) -->
+          <div id="expanded-${item.id}" class="d-none">
+            <div class="d-flex justify-content-between small text-muted mb-1 text-nowrap">
+              <span>Tiền phòng:</span>
+              <span class="fw-semibold text-dark ms-3">${formatCurrency(roomFee)}</span>
+            </div>
+            <div class="d-flex justify-content-between small text-muted mb-1 text-nowrap">
+              <span>Điện nước:</span>
+              <span class="fw-semibold text-dark ms-3">${formatCurrency(utilitiesFee)}</span>
+            </div>
+            <div class="d-flex justify-content-between small text-muted mb-1 text-nowrap">
+              <span>Dịch vụ:</span>
+              <span class="fw-semibold text-dark ms-3">${formatCurrency(servicesFee)}</span>
+            </div>
+            <div class="d-flex justify-content-between small fw-bold mb-1 text-primary text-nowrap">
+              <span>Tổng:</span>
+              <span class="ms-3">${formatCurrency(item.totalAmount)}</span>
+            </div>
+            <div class="d-flex justify-content-between small text-success mb-1 text-nowrap">
+              <span>Đã trả:</span>
+              <span class="ms-3">${formatCurrency(item.paidAmount)}</span>
+            </div>
+            <div class="d-flex justify-content-between small text-danger fw-bold text-nowrap">
+              <span>Nợ:</span>
+              <span class="ms-3">${formatCurrency(item.remainingDebt)}</span>
+            </div>
+          </div>
+
+          <!-- Nút bấm Xem chi tiết / Thu gọn -->
+          <div class="mt-1">
+            <a href="#" class="btn-toggle-details text-decoration-none small text-secondary fw-semibold" data-id="${item.id}" id="toggle-btn-${item.id}">
+              <i class="bi bi-chevron-down me-1"></i>Xem chi tiết
+            </a>
+          </div>
+        </td>
         <td class="text-center text-muted small">${formatDateToDisplay(item.dueDate)}</td>
         <td class="text-center"><span class="badge ${statusClass}">${statusLabel}</span></td>
         <td class="text-end">
           <div class="dropdown">
-            <button class="btn btn-sm btn-light border-0 rounded-circle p-1" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" title="Thao tác">
+            <button class="btn btn-sm btn-light border-0 rounded-circle p-1" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Thao tác">
               <i class="bi bi-three-dots-vertical"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 150px;">
@@ -598,6 +643,21 @@ function bindEvents() {
         handleDelete(id);
       } else if (target.classList.contains('btn-cancel-invoice') || target.closest('.btn-cancel-invoice')) {
         handleCancel(id);
+      } else if (target.classList.contains('btn-toggle-details')) {
+        const collapsedBox = document.getElementById(`collapsed-${id}`);
+        const expandedBox = document.getElementById(`expanded-${id}`);
+        if (collapsedBox && expandedBox) {
+          const isCollapsed = expandedBox.classList.contains('d-none');
+          if (isCollapsed) {
+            expandedBox.classList.remove('d-none');
+            collapsedBox.classList.add('d-none');
+            target.innerHTML = '<i class="bi bi-chevron-up me-1"></i>Thu gọn';
+          } else {
+            expandedBox.classList.add('d-none');
+            collapsedBox.classList.remove('d-none');
+            target.innerHTML = '<i class="bi bi-chevron-down me-1"></i>Xem chi tiết';
+          }
+        }
       }
     });
   }

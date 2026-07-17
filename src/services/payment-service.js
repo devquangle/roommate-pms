@@ -144,6 +144,8 @@ export function createPayment(data) {
     amount: toNumberOrDefault(data.amount, 0),
     method: data.method,
     date: data.date,
+    transactionId: data.transactionId || '',
+    content: data.content || '',
     note: (data.note || '').trim()
   };
 

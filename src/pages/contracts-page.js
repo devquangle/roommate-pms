@@ -338,7 +338,7 @@ function renderContractsList() {
         <td>${getStatusBadge(c.status)}</td>
         <td class="text-end">
           <div class="dropdown">
-            <button class="btn btn-light btn-sm rounded-circle p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn-light btn-sm rounded-circle p-1" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
               <i class="bi bi-three-dots-vertical"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm">

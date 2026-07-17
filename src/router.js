@@ -12,6 +12,7 @@ import { renderRoomsPage } from './pages/rooms-page.js';
 import { renderTenantsPage } from './pages/tenants-page.js';
 import { renderContractsPage } from './pages/contracts-page.js';
 import { renderMetersPage } from './pages/meter-readings-page.js';
+import { renderMetersHistoryPage } from './pages/meter-readings-history-page.js';
 import { renderServicesPage } from './pages/services-page.js';
 import { renderInvoicesPage } from './pages/invoices-page.js';
 import { renderPaymentsPage } from './pages/payments-page.js';
@@ -29,6 +30,7 @@ const routes = {
   'tenants':    { title: 'Người thuê',          render: renderTenantsPage },
   'contracts':  { title: 'Hợp đồng',           render: renderContractsPage },
   'meters':     { title: 'Chỉ số điện nước',    render: renderMetersPage },
+  'meters-history': { title: 'Lịch sử điện nước', render: renderMetersHistoryPage },
   'services':   { title: 'Cấu hình dịch vụ',   render: renderServicesPage },
   'invoices':   { title: 'Lập hóa đơn',        render: renderInvoicesPage },
   'payments':   { title: 'Thanh toán',          render: renderPaymentsPage },

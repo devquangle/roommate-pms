@@ -6,6 +6,7 @@ import { ROOM_STATUS, CONTRACT_STATUS } from '../constants/statuses.js';
 import { generateId } from '../utils/id-utils.js';
 import { toNumberOrDefault } from '../utils/number-utils.js';
 import { isValidDate } from '../utils/validation-utils.js';
+import { formatDateToDisplay } from '../utils/date-utils.js';
 import { validateContract } from '../business/contract-validator.js';
 import {
   isContractActive,
@@ -202,6 +203,14 @@ export function createContract(data) {
     vehicles: toNumberOrDefault(data.vehicles, 0),
     terms: data.terms || '',
     notes: data.notes || '',
+    createdAt: new Date().toISOString(),
+    history: [
+      {
+        date: new Date().toISOString(),
+        title: 'Tạo hợp đồng',
+        description: (data.status === CONTRACT_STATUS.DRAFT) ? 'Khởi tạo bản nháp hợp đồng' : 'Khởi tạo hợp đồng mới và bắt đầu hiệu lực'
+      }
+    ]
   };
 
   // Ghi hợp đồng trước
@@ -262,6 +271,13 @@ export function updateContract(id, data) {
     throw new Error(result.errors.join(' '));
   }
 
+  const history = Array.isArray(contract.history) ? [...contract.history] : [];
+  history.push({
+    date: new Date().toISOString(),
+    title: 'Cập nhật hợp đồng',
+    description: 'Cập nhật thông tin hợp đồng'
+  });
+
   const changes = {
     roomId: merged.roomId,
     tenantId: merged.tenantId,
@@ -275,6 +291,7 @@ export function updateContract(id, data) {
     vehicles: data.vehicles !== undefined ? toNumberOrDefault(data.vehicles, 0) : contract.vehicles,
     terms: data.terms !== undefined ? data.terms : contract.terms,
     notes: data.notes !== undefined ? data.notes : contract.notes,
+    history: history,
   };
 
   const updated = StorageService.update(KEY, id, changes);
@@ -334,8 +351,18 @@ export function activateContract(id) {
     );
   }
 
+  const history = Array.isArray(contract.history) ? [...contract.history] : [];
+  history.push({
+    date: new Date().toISOString(),
+    title: 'Kích hoạt hợp đồng',
+    description: 'Hợp đồng bắt đầu có hiệu lực và bắt đầu tính tiền'
+  });
+
   // Cập nhật hợp đồng
-  const updated = StorageService.update(KEY, id, { status: CONTRACT_STATUS.ACTIVE });
+  const updated = StorageService.update(KEY, id, {
+    status: CONTRACT_STATUS.ACTIVE,
+    history: history
+  });
 
   // Đồng bộ phòng → rented
   if (room && room.status !== ROOM_STATUS.RENTED) {
@@ -386,10 +413,18 @@ export function extendContract(id, newEndDate) {
     );
   }
 
+  const history = Array.isArray(contract.history) ? [...contract.history] : [];
+  history.push({
+    date: new Date().toISOString(),
+    title: 'Gia hạn hợp đồng',
+    description: `Gia hạn ngày kết thúc đến ngày ${formatDateToDisplay(newEndDate)}`
+  });
+
   // Cập nhật hợp đồng: endDate mới + đảm bảo active
   const updated = StorageService.update(KEY, id, {
     endDate: newEndDate,
     status: CONTRACT_STATUS.ACTIVE,
+    history: history
   });
 
   // Đồng bộ phòng → rented
@@ -431,10 +466,18 @@ export function endContract(id, actualEndDate) {
     throw new Error('Ngày kết thúc thực tế không hợp lệ.');
   }
 
+  const history = Array.isArray(contract.history) ? [...contract.history] : [];
+  history.push({
+    date: new Date().toISOString(),
+    title: 'Kết thúc hợp đồng',
+    description: `Kết thúc hợp đồng hiệu lực vào ngày ${formatDateToDisplay(endDate)}`
+  });
+
   // Cập nhật hợp đồng → expired, ghi nhận endDate thực tế
   const updated = StorageService.update(KEY, id, {
     status: CONTRACT_STATUS.EXPIRED,
     endDate: endDate,
+    history: history
   });
 
   // Nếu phòng không còn HĐ active nào khác → available
@@ -466,9 +509,17 @@ export function cancelContract(id) {
     throw new Error('Hợp đồng đã được thanh lý trước đó.');
   }
 
+  const history = Array.isArray(contract.history) ? [...contract.history] : [];
+  history.push({
+    date: new Date().toISOString(),
+    title: 'Hủy hợp đồng',
+    description: 'Thanh lý / hủy hợp đồng trước thời hạn'
+  });
+
   // Cập nhật → terminated
   const updated = StorageService.update(KEY, id, {
     status: CONTRACT_STATUS.TERMINATED,
+    history: history
   });
 
   // Đồng bộ phòng nếu không còn HĐ active

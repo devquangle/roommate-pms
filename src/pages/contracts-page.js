@@ -30,12 +30,14 @@ import { isValidDate } from '../utils/validation-utils.js';
 import {
   CONTRACT_STATUS,
   CONTRACT_STATUS_LABELS,
+  ROOM_STATUS_LABELS,
 } from '../constants/statuses.js';
 import { isContractExpiringSoon } from '../business/contract-utils.js';
 import { showToast } from '../components/toast.js';
 import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openContractForm } from '../components/contract-form.js';
 import { openContractDetail } from '../components/contract-detail.js';
+import { printContract } from '../utils/print-utils.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
@@ -219,7 +221,11 @@ function populateRoomFilter() {
   if (!filterRoom) return;
 
   const rooms = getRooms();
-  const options = rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+  const options = rooms.map(r => {
+    const nameText = r.name.startsWith('Phòng') ? r.name : 'Phòng ' + r.name;
+    const statusText = ROOM_STATUS_LABELS[r.status] || r.status;
+    return `<option value="${r.id}">${nameText} (${statusText})</option>`;
+  }).join('');
   filterRoom.innerHTML = '<option value="">Tất cả phòng</option>' + options;
 
   initSearchableSelect(filterRoom);
@@ -250,12 +256,21 @@ function getFilteredContracts() {
     contracts = contracts.filter(c => c.startDate <= currentFilters.toDate);
   }
 
-  // Sort: active first, then by startDate desc
+  // Sort: Theo ngày tạo mới nhất lên đầu
+  const originalContracts = getContracts();
+  const indexMap = new Map(originalContracts.map((c, i) => [c.id, i]));
+
   contracts.sort((a, b) => {
-    const order = { active: 0, expired: 1, terminated: 2 };
-    const diff = (order[a.status] || 3) - (order[b.status] || 3);
-    if (diff !== 0) return diff;
-    return new Date(b.startDate) - new Date(a.startDate);
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    
+    if (timeA !== timeB) {
+      return timeB - timeA;
+    }
+    
+    const idxA = indexMap.has(a.id) ? indexMap.get(a.id) : 0;
+    const idxB = indexMap.has(b.id) ? indexMap.get(b.id) : 0;
+    return idxB - idxA;
   });
 
   return contracts;
@@ -493,7 +508,19 @@ function bindEvents(container) {
 function handleView(id) {
   const contract = getContractById(id);
   if (contract) {
-    openContractDetail(contract);
+    openContractDetail({
+      contract,
+      onExtend: () => handleExtend(id),
+      onEnd: () => handleEnd(id),
+      onPrint: () => {
+        const r = getRoomById(contract.roomId);
+        const t = getTenantById(contract.tenantId);
+        const coT = Array.isArray(contract.coTenantIds)
+          ? contract.coTenantIds.map(cid => getTenantById(cid)).filter(Boolean)
+          : [];
+        printContract(contract, r, t, coT);
+      }
+    });
   }
 }
 

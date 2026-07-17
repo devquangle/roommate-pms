@@ -1,8 +1,8 @@
 // src/pages/meter-readings-page.js
 
 /**
- * Trang ghi chỉ số điện nước.
- * Hỗ trợ chọn tháng, xem danh sách phòng, lọc, thêm/sửa/xóa chỉ số, hiển thị phòng chưa ghi chỉ số, cảnh báo bất thường.
+ * Trang ghi chỉ số điện nước (Spreadsheet-like Inline Editor).
+ * Hỗ trợ nhập trực tiếp trong bảng, tự động tính tiêu thụ, cảnh báo tức thời, lọc và lưu hàng loạt.
  */
 
 import '../styles/meter-readings.css';
@@ -13,328 +13,600 @@ import {
   getReadingByRoomAndMonth,
   createReading,
   updateReading,
-  deleteReading,
   getPreviousReading,
-  getRoomsWithoutReading,
-  filterReadings
+  hasActiveContractInMonth
 } from '../services/meter-reading-service.js';
 
 import { getRooms, getRoomById } from '../services/room-service.js';
+import { getTenantById } from '../services/tenant-service.js';
 import { detectAbnormalUsage } from '../business/meter-calculator.js';
 import { showToast } from '../components/toast.js';
-import { showConfirmDialog } from '../components/confirm-dialog.js';
-import { openMeterReadingForm } from '../components/meter-reading-form.js';
-import { initSearchableSelect } from '../components/searchable-select.js';
+import { STORAGE_KEYS } from '../constants/storage-keys.js';
+import * as StorageService from '../services/storage-service.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
-let currentMonth = new Date().getMonth() + 1; // 1-12
-let currentYear = new Date().getFullYear();
-let currentRoomId = '';
+// Mặc định chọn tháng 7 năm 2026 như yêu cầu thiết kế
+let currentMonth = 7;
+let currentYear = 2026;
+let showOnlyUnrecorded = false; // Trạng thái bộ lọc "Chỉ hiển thị phòng chưa ghi"
+let tableRows = []; // Chứa trạng thái các dòng hiện hành của bảng nhập liệu
 
 export function renderMetersPage(container) {
-  // Lấy các giá trị lọc từ bộ lọc cũ nếu có, nếu không mặc định tháng hiện tại
-  currentRoomId = '';
-
   container.innerHTML = `
     <div data-testid="meters-page">
-      <!-- Alert danh sách phòng chưa ghi chỉ số -->
-      <div id="unrecordedRoomsAlert" class="mb-3" data-testid="unrecorded-rooms-alert"></div>
+      <!-- Toolbar đầu trang -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 p-3 bg-white border rounded shadow-sm">
+        <div class="d-flex flex-wrap align-items-center gap-3">
+          <!-- Chọn tháng/năm -->
+          <div class="d-flex align-items-center gap-2 flex-nowrap">
+            <label for="filterMonth" class="fw-bold text-dark mb-0 text-nowrap"><i class="bi bi-calendar3 me-1 text-primary"></i>Kỳ ghi:</label>
+            <select class="form-select form-select-sm" style="max-width: 120px;" id="filterMonth" data-testid="filter-month">
+              ${Array.from({ length: 12 }, (_, i) => i + 1).map(m => `
+                <option value="${m}" ${currentMonth === m ? 'selected' : ''}>Tháng ${String(m).padStart(2, '0')}</option>
+              `).join('')}
+            </select>
+            <select class="form-select form-select-sm" style="width: 130px;" id="filterYear" data-testid="filter-year">
+              ${[2024, 2025, 2026, 2027, 2028].map(y => `
+                <option value="${y}" ${currentYear === y ? 'selected' : ''}>Năm ${y}</option>
+              `).join('')}
+            </select>
+          </div>
 
-      <!-- Toolbar -->
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <h4 class="mb-0">Chỉ số điện nước</h4>
-        <button class="btn btn-primary btn-sm" id="btnAddReading" data-testid="btn-add-reading">
-          + Ghi chỉ số mới
-        </button>
-      </div>
-
-      <!-- Bộ lọc và Tìm kiếm -->
-      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <!-- Lọc tháng -->
-        <div class="d-flex align-items-center gap-1">
-          <label for="filterMonth" class="small text-muted mb-0">Tháng:</label>
-          <select class="form-select form-select-sm" style="max-width: 110px;" id="filterMonth" data-testid="filter-month">
-            ${Array.from({ length: 12 }, (_, i) => i + 1).map(m => `
-              <option value="${m}" ${currentMonth === m ? 'selected' : ''}>Tháng ${m}</option>
-            `).join('')}
-          </select>
+          <!-- Bộ lọc "Chỉ hiện phòng chưa ghi" -->
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="filterUnrecorded" data-testid="filter-unrecorded" ${showOnlyUnrecorded ? 'checked' : ''}>
+            <label class="form-check-label fw-bold text-muted small" style="cursor: pointer;" for="filterUnrecorded">Chỉ hiện phòng chưa ghi</label>
+          </div>
         </div>
 
-        <!-- Lọc năm -->
-        <div class="d-flex align-items-center gap-1">
-          <label for="filterYear" class="small text-muted mb-0">Năm:</label>
-          <input type="number" class="form-control form-control-sm" style="max-width: 100px;" id="filterYear" data-testid="filter-year"
-            value="${currentYear}" />
-        </div>
-
-        <!-- Lọc phòng -->
-        <div class="d-flex align-items-center gap-1">
-          <label for="filterRoom" class="small text-muted mb-0">Phòng:</label>
-          <select class="form-select form-select-sm" style="max-width: 160px;" id="filterRoom" data-testid="filter-room">
-            <option value="">Tất cả phòng</option>
-          </select>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm d-flex align-items-center gap-1" id="btnGenerateList" data-testid="btn-generate-list">
+            <i class="bi bi-file-earmark-plus"></i> Tạo danh sách phòng
+          </button>
+          <button class="btn btn-success btn-sm d-flex align-items-center gap-1" id="btnSaveAll" data-testid="btn-save-all">
+            <i class="bi bi-save"></i> Lưu tất cả
+          </button>
         </div>
       </div>
 
-      <!-- Danh sách chỉ số dưới dạng Cards và Table -->
-      <div class="table-responsive">
-        <table class="table table-hover align-middle" data-testid="meters-table">
-          <thead class="table-light">
-            <tr>
-              <th>Phòng</th>
-              <th>Thời gian</th>
-              <th>Chỉ số điện (Cũ / Mới)</th>
-              <th>Sử dụng điện</th>
-              <th>Chỉ số nước (Cũ / Mới)</th>
-              <th>Sử dụng nước</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody id="metersTableBody" data-testid="meters-table-body">
-          </tbody>
-        </table>
+      <!-- Các card tổng quan -->
+      <div class="row g-3 mb-4">
+        <!-- Phòng cần ghi -->
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded p-3 text-center bg-white h-100">
+            <div class="small text-muted fw-bold text-uppercase mb-1">Phòng cần ghi</div>
+            <div class="fs-2 fw-bold text-primary" id="summaryRoomsNeed" data-testid="summary-rooms-need">0</div>
+          </div>
+        </div>
+
+        <!-- Đã ghi -->
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded p-3 text-center bg-white h-100">
+            <div class="small text-muted fw-bold text-uppercase mb-1">Đã ghi</div>
+            <div class="fs-2 fw-bold text-success" id="summaryRecorded" data-testid="summary-recorded">0</div>
+          </div>
+        </div>
+
+        <!-- Chưa ghi -->
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded p-3 text-center bg-white h-100">
+            <div class="small text-muted fw-bold text-uppercase mb-1">Chưa ghi</div>
+            <div class="fs-2 fw-bold text-danger" id="summaryUnrecorded" data-testid="summary-unrecorded">0</div>
+          </div>
+        </div>
+
+        <!-- Có cảnh báo -->
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm rounded p-3 text-center bg-white h-100">
+            <div class="small text-muted fw-bold text-uppercase mb-1">Có cảnh báo</div>
+            <div class="fs-2 fw-bold text-warning" id="summaryWarning" data-testid="summary-warning">0</div>
+          </div>
+        </div>
       </div>
 
-      <div id="metersEmpty" class="text-muted text-center d-none p-4" data-testid="meters-empty">
-        Không có dữ liệu chỉ số điện nước nào khớp bộ lọc.
+      <!-- Bảng nhập liệu Spreadsheet -->
+      <div class="card border-0 shadow-sm rounded overflow-hidden">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" data-testid="meters-table">
+            <thead class="table-light border-bottom">
+              <tr>
+                <th style="min-width: 120px;">Phòng</th>
+                <th style="min-width: 150px;">Người thuê</th>
+                <th style="max-width: 90px;" class="text-center">Điện cũ</th>
+                <th style="max-width: 100px;" class="text-center">Điện mới</th>
+                <th style="min-width: 110px;" class="text-center">Điện tiêu thụ</th>
+                <th style="max-width: 90px;" class="text-center">Nước cũ</th>
+                <th style="max-width: 100px;" class="text-center">Nước mới</th>
+                <th style="min-width: 110px;" class="text-center">Nước tiêu thụ</th>
+                <th style="min-width: 130px;">Cảnh báo</th>
+                <th style="min-width: 90px;" class="text-center">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="metersTableBody" data-testid="meters-table-body">
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   `;
 
-  populateRoomFilter();
-  renderUnrecordedAlert();
-  renderMeterReadingsList();
+  initializeTable();
   bindEvents();
 }
 
-// ─── POPULATE ROOM FILTER ──────────────────────────────────────
+// ─── TẢI VÀ KHỞI TẠO BẢNG ──────────────────────────────────────
 
-function populateRoomFilter() {
-  const filterRoom = document.getElementById('filterRoom');
-  if (!filterRoom) return;
-
+function initializeTable() {
   const rooms = getRooms();
-  const options = rooms.map(r => `<option value="${r.id}" ${currentRoomId === r.id ? 'selected' : ''}>${r.name}</option>`).join('');
-  filterRoom.innerHTML = '<option value="">Tất cả phòng</option>' + options;
+  const readings = getReadings();
+  const contracts = StorageService.getAll(STORAGE_KEYS.CONTRACTS);
 
-  initSearchableSelect(filterRoom);
+  // Chỉ lấy phòng có hợp đồng hiệu lực trong kỳ này
+  const activeRooms = rooms.filter(r => hasActiveContractInMonth(r.id, currentMonth, currentYear));
+
+  tableRows = activeRooms.map(room => {
+    // Tìm người đại diện
+    const activeContract = contracts.find(c =>
+      c.roomId === room.id &&
+      c.status === 'active' &&
+      hasActiveContractInMonth(room.id, currentMonth, currentYear)
+    );
+    const tenant = activeContract ? getTenantById(activeContract.tenantId) : null;
+    const tenantName = tenant ? tenant.fullName : 'Không có đại diện';
+
+    const existingReading = readings.find(r => r.roomId === room.id && r.month === currentMonth && r.year === currentYear);
+
+    if (existingReading) {
+      const row = {
+        id: existingReading.id,
+        roomId: room.id,
+        roomName: room.name,
+        tenantName: tenantName,
+        electricityOld: existingReading.electricityOld,
+        electricityNew: existingReading.electricityNew,
+        electricityUsage: existingReading.electricityUsage,
+        waterOld: existingReading.waterOld,
+        waterNew: existingReading.waterNew,
+        waterUsage: existingReading.waterUsage,
+        isSaved: true,
+        error: '',
+        isAbnormal: false,
+        warning: ''
+      };
+      validateAndCalculateRow(row);
+      return row;
+    } else {
+      const prevReading = getPreviousReading(room.id, currentMonth, currentYear);
+      const elecOld = prevReading ? prevReading.electricityNew : 0;
+      const waterOld = prevReading ? prevReading.waterNew : 0;
+
+      return {
+        id: `temp-${room.id}`,
+        roomId: room.id,
+        roomName: room.name,
+        tenantName: tenantName,
+        electricityOld: elecOld,
+        electricityNew: '',
+        electricityUsage: 0,
+        waterOld: waterOld,
+        waterNew: '',
+        waterUsage: 0,
+        isSaved: false,
+        error: '',
+        isAbnormal: false,
+        warning: ''
+      };
+    }
+  });
+
+  filterTableRows();
+  updateSummaryCards();
 }
 
-// ─── SHOW UNRECORDED ALERTS ───────────────────────────────────
+// ─── TÍNH TOÁN VÀ KIỂM TRA LỖI TRỰC TIẾP ───────────────────────
 
-function renderUnrecordedAlert() {
-  const alertEl = document.getElementById('unrecordedRoomsAlert');
-  if (!alertEl) return;
+function validateAndCalculateRow(row) {
+  row.error = '';
+  row.warning = '';
+  row.isAbnormal = false;
 
-  const unrecordedRooms = getRoomsWithoutReading(currentMonth, currentYear);
-  if (unrecordedRooms.length === 0) {
-    alertEl.innerHTML = '';
-    return;
+  // 1. Kiểm tra & Tính tiêu thụ điện
+  const elecNew = row.electricityNew;
+  if (elecNew !== '' && !isNaN(elecNew) && elecNew !== null) {
+    const val = Number(elecNew);
+    if (val < row.electricityOld) {
+      row.error = 'Điện mới nhỏ hơn điện cũ!';
+    } else {
+      row.electricityUsage = val - row.electricityOld;
+    }
+  } else {
+    row.electricityUsage = 0;
   }
 
-  alertEl.innerHTML = `
-    <div class="alert alert-warning p-3" data-testid="unrecorded-alert-box">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <span>
-          <strong>⚠️ Phát hiện ${unrecordedRooms.length} phòng đang thuê chưa ghi chỉ số điện nước</strong> trong tháng ${currentMonth}/${currentYear}.
-        </span>
-        <span class="badge bg-danger p-2" data-testid="unrecorded-count">${unrecordedRooms.length} phòng</span>
-      </div>
-      <div class="mt-2 small">
-        Danh sách phòng chưa ghi: ${unrecordedRooms.map(r => `<strong>${r.name}</strong>`).join(', ')}
-      </div>
-    </div>
-  `;
+  // 2. Kiểm tra & Tính tiêu thụ nước
+  const waterNew = row.waterNew;
+  if (waterNew !== '' && !isNaN(waterNew) && waterNew !== null) {
+    const val = Number(waterNew);
+    if (val < row.waterOld) {
+      row.error = row.error ? row.error + ' | Nước mới nhỏ hơn nước cũ!' : 'Nước mới nhỏ hơn nước cũ!';
+    } else {
+      row.waterUsage = val - row.waterOld;
+    }
+  } else {
+    row.waterUsage = 0;
+  }
+
+  // 3. Kiểm tra bất thường so với tháng liền kề trước (nếu không có lỗi trị nhỏ hơn)
+  if (!row.error) {
+    const prevReading = getPreviousReading(row.roomId, currentMonth, currentYear);
+    if (prevReading) {
+      if (elecNew !== '' && !isNaN(elecNew)) {
+        const prevElecUsage = prevReading.electricityUsage || 0;
+        const elecAbnormal = detectAbnormalUsage(row.electricityUsage, prevElecUsage);
+        if (elecAbnormal.abnormal) {
+          row.isAbnormal = true;
+          row.warning = elecAbnormal.message;
+        }
+      }
+
+      if (waterNew !== '' && !isNaN(waterNew)) {
+        const prevWaterUsage = prevReading.waterUsage || 0;
+        const waterAbnormal = detectAbnormalUsage(row.waterUsage, prevWaterUsage);
+        if (waterAbnormal.abnormal) {
+          row.isAbnormal = true;
+          row.warning = row.warning ? row.warning + ' | ' + waterAbnormal.message : waterAbnormal.message;
+        }
+      }
+    }
+  }
 }
 
-// ─── RENDER LIST ───────────────────────────────────────────────
+// ─── CẬP NHẬT TRỰC QUAN TỪNG HÀNG (GIỮ CON TRỎ CHỮ) ─────────────
 
-function renderMeterReadingsList() {
+function updateRowUI(row) {
+  const tr = document.querySelector(`tr[data-room-id="${row.roomId}"]`);
+  if (!tr) return;
+
+  // Cột Điện tiêu thụ
+  const elecUsageCell = tr.querySelector('.cell-elec-usage');
+  if (elecUsageCell) {
+    elecUsageCell.innerHTML = `<span class="badge bg-primary">${row.electricityUsage} kWh</span>`;
+  }
+
+  // Cột Nước tiêu thụ
+  const waterUsageCell = tr.querySelector('.cell-water-usage');
+  if (waterUsageCell) {
+    waterUsageCell.innerHTML = `<span class="badge bg-info text-dark">${row.waterUsage} m³</span>`;
+  }
+
+  // Cột Cảnh báo
+  const warningCell = tr.querySelector('.cell-warning');
+  if (warningCell) {
+    if (row.error) {
+      warningCell.innerHTML = `<span class="text-danger small fw-bold" title="${row.error}"><i class="bi bi-x-circle-fill me-1"></i>Chỉ số giảm</span>`;
+    } else if (row.isAbnormal) {
+      warningCell.innerHTML = `<span class="text-warning small fw-bold" title="${row.warning}"><i class="bi bi-exclamation-triangle-fill me-1"></i>Biến động</span>`;
+    } else {
+      warningCell.innerHTML = `<span class="text-success small"><i class="bi bi-check-circle-fill me-1"></i>Ổn định</span>`;
+    }
+  }
+
+  // Cột Trạng thái lưu
+  const saveCell = tr.querySelector('.cell-save-status');
+  if (saveCell) {
+    if (row.isSaved) {
+      saveCell.innerHTML = `<span class="text-success fs-5" title="Đã lưu"><i class="bi bi-check-lg"></i></span>`;
+    } else {
+      saveCell.innerHTML = `<span class="text-muted fs-6" title="Chưa lưu"><i class="bi bi-dash-circle"></i></span>`;
+    }
+  }
+}
+
+// ─── RENDER DANH SÁCH RA BẢNG ──────────────────────────────────
+
+function filterTableRows() {
   const tbody = document.getElementById('metersTableBody');
-  const emptyEl = document.getElementById('metersEmpty');
   if (!tbody) return;
 
-  const filters = {
-    month: currentMonth,
-    year: currentYear,
-    roomId: currentRoomId || undefined
-  };
+  tbody.innerHTML = '';
 
-  const list = filterReadings(filters);
+  let filtered = tableRows;
+  if (showOnlyUnrecorded) {
+    filtered = tableRows.filter(r => !r.isSaved || r.electricityNew === '' || r.waterNew === '');
+  }
 
-  if (list.length === 0) {
-    tbody.innerHTML = '';
-    emptyEl && emptyEl.classList.remove('d-none');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" class="text-center text-muted py-4">
+          Không có phòng nào trong danh sách khớp bộ lọc.
+        </td>
+      </tr>
+    `;
     return;
   }
 
-  emptyEl && emptyEl.classList.add('d-none');
+  tbody.innerHTML = filtered.map(row => {
+    const errorHtml = row.error
+      ? `<span class="text-danger small fw-bold" title="${row.error}"><i class="bi bi-x-circle-fill me-1"></i>Chỉ số giảm</span>`
+      : (row.isAbnormal
+          ? `<span class="text-warning small fw-bold" title="${row.warning}"><i class="bi bi-exclamation-triangle-fill me-1"></i>Biến động</span>`
+          : `<span class="text-success small"><i class="bi bi-check-circle-fill me-1"></i>Ổn định</span>`);
 
-  tbody.innerHTML = list.map(item => {
-    const room = getRoomById(item.roomId);
-    const roomName = room ? room.name : item.roomId;
-
-    // Kiểm tra bất thường dựa trên kỳ trước
-    const prevReading = getPreviousReading(item.roomId, item.month, item.year);
-    const elecAbnormal = prevReading ? detectAbnormalUsage(item.electricityUsage, prevReading.electricityUsage || 0) : { abnormal: false };
-    const waterAbnormal = prevReading ? detectAbnormalUsage(item.waterUsage, prevReading.waterUsage || 0) : { abnormal: false };
-
-    const elecBadge = elecAbnormal.abnormal
-      ? `<span class="badge bg-warning text-dark" title="${elecAbnormal.message}">⚠️ Biến động</span>`
-      : '';
-
-    const waterBadge = waterAbnormal.abnormal
-      ? `<span class="badge bg-warning text-dark" title="${waterAbnormal.message}">⚠️ Biến động</span>`
-      : '';
+    const saveHtml = row.isSaved
+      ? `<span class="text-success fs-5" title="Đã lưu"><i class="bi bi-check-lg"></i></span>`
+      : `<span class="text-muted fs-6" title="Chưa lưu"><i class="bi bi-dash-circle"></i></span>`;
 
     return `
-      <tr data-testid="meter-row-${item.id}">
-        <td><strong>${roomName}</strong></td>
-        <td>Tháng ${item.month}/${item.year}</td>
-        <td>
-          <span class="text-muted">${item.electricityOld}</span>
-          <span class="mx-1">→</span>
-          <strong>${item.electricityNew}</strong>
+      <tr data-room-id="${row.roomId}" data-testid="meter-row-${row.roomId}">
+        <td><strong>${row.roomName.startsWith('Phòng') ? row.roomName : 'Phòng ' + row.roomName}</strong></td>
+        <td><small class="text-muted">${row.tenantName}</small></td>
+        
+        <!-- Điện cũ -->
+        <td style="max-width: 90px;" class="text-center">
+          <input type="number" class="form-control form-control-sm text-center bg-light border-0" value="${row.electricityOld}" disabled />
         </td>
-        <td>
-          <span class="badge bg-primary">${item.electricityUsage} kWh</span>
-          ${elecBadge}
+        
+        <!-- Điện mới -->
+        <td style="max-width: 110px;" class="text-center">
+          <input type="number" class="form-control form-control-sm text-center input-elec-new" 
+            data-room-id="${row.roomId}" data-type="electricityNew" min="0"
+            value="${row.electricityNew}" placeholder="Nhập số" data-testid="input-elec-new-${row.roomId}" />
         </td>
-        <td>
-          <span class="text-muted">${item.waterOld}</span>
-          <span class="mx-1">→</span>
-          <strong>${item.waterNew}</strong>
+        
+        <!-- Điện tiêu thụ -->
+        <td class="cell-elec-usage text-center">
+          <span class="badge bg-primary">${row.electricityUsage} kWh</span>
         </td>
-        <td>
-          <span class="badge bg-info text-dark">${item.waterUsage} m³</span>
-          ${waterBadge}
+        
+        <!-- Nước cũ -->
+        <td style="max-width: 90px;" class="text-center">
+          <input type="number" class="form-control form-control-sm text-center bg-light border-0" value="${row.waterOld}" disabled />
         </td>
-        <td>
-          <div class="btn-group gap-1">
-            <button class="btn btn-outline-primary btn-sm btn-edit-reading" data-id="${item.id}" data-testid="btn-edit-reading-${item.id}">✏️</button>
-            <button class="btn btn-outline-danger btn-sm btn-delete-reading" data-id="${item.id}" data-testid="btn-delete-reading-${item.id}">✕</button>
-          </div>
+        
+        <!-- Nước mới -->
+        <td style="max-width: 110px;" class="text-center">
+          <input type="number" class="form-control form-control-sm text-center input-water-new" 
+            data-room-id="${row.roomId}" data-type="waterNew" min="0"
+            value="${row.waterNew}" placeholder="Nhập số" data-testid="input-water-new-${row.roomId}" />
         </td>
+        
+        <!-- Nước tiêu thụ -->
+        <td class="cell-water-usage text-center">
+          <span class="badge bg-info text-dark">${row.waterUsage} m³</span>
+        </td>
+        
+        <!-- Cảnh báo -->
+        <td class="cell-warning">${errorHtml}</td>
+        
+        <!-- Trạng thái lưu -->
+        <td class="cell-save-status text-center">${saveHtml}</td>
       </tr>
     `;
   }).join('');
 }
 
-// ─── EVENT BINDING ─────────────────────────────────────────────
+// ─── CẬP NHẬT THẺ TỔNG QUAN ────────────────────────────────────
+
+function updateSummaryCards() {
+  const cardRoomNeed = document.getElementById('summaryRoomsNeed');
+  const cardRecorded = document.getElementById('summaryRecorded');
+  const cardUnrecorded = document.getElementById('summaryUnrecorded');
+  const cardWarning = document.getElementById('summaryWarning');
+
+  if (!cardRoomNeed || !cardRecorded || !cardUnrecorded || !cardWarning) return;
+
+  const rooms = getRooms();
+  const readings = getReadings();
+
+  // 1. Số phòng có HĐ cần ghi
+  const roomsNeed = rooms.filter(r => hasActiveContractInMonth(r.id, currentMonth, currentYear)).length;
+  
+  // 2. Số phòng đã ghi (đã có record trong storage)
+  const recorded = readings.filter(r => r.month === currentMonth && r.year === currentYear).length;
+
+  // 3. Số phòng chưa ghi
+  const unrecorded = Math.max(0, roomsNeed - recorded);
+
+  // 4. Số phòng đang gặp lỗi hoặc có cảnh báo biến động trên bảng
+  const warningCount = tableRows.filter(r => r.error || r.isAbnormal).length;
+
+  cardRoomNeed.textContent = roomsNeed;
+  cardRecorded.textContent = recorded;
+  cardUnrecorded.textContent = unrecorded;
+  cardWarning.textContent = warningCount;
+}
+
+// ─── XỬ LÝ SỰ KIỆN NÚT VÀ LỌC ──────────────────────────────────
 
 function bindEvents() {
-  const btnAdd = document.getElementById('btnAddReading');
-  if (btnAdd) {
-    btnAdd.addEventListener('click', () => {
-      openMeterReadingForm({
-        reading: null,
-        defaultMonth: currentMonth,
-        defaultYear: currentYear,
-        onSave: (data) => {
-          const res = createReading(data);
-          if (res.warnings && res.warnings.length > 0) {
-            showToast(res.warnings.join(' | '), 'warning');
-          } else {
-            showToast('Ghi nhận chỉ số điện nước thành công!', 'success');
-          }
-          renderUnrecordedAlert();
-          renderMeterReadingsList();
-        }
-      });
-    });
-  }
-
-  // Filter Month
+  // Bộ lọc Tháng
   const filterMonth = document.getElementById('filterMonth');
   if (filterMonth) {
     filterMonth.addEventListener('change', () => {
       currentMonth = Number(filterMonth.value);
-      renderUnrecordedAlert();
-      renderMeterReadingsList();
+      initializeTable();
     });
   }
 
-  // Filter Year
+  // Bộ lọc Năm
   const filterYear = document.getElementById('filterYear');
   if (filterYear) {
-    filterYear.addEventListener('input', () => {
-      const year = Number(filterYear.value);
-      if (!isNaN(year) && year >= 2000) {
-        currentYear = year;
-        renderUnrecordedAlert();
-        renderMeterReadingsList();
-      }
+    filterYear.addEventListener('change', () => {
+      currentYear = Number(filterYear.value);
+      initializeTable();
     });
   }
 
-  // Filter Room
-  const filterRoom = document.getElementById('filterRoom');
-  if (filterRoom) {
-    filterRoom.addEventListener('change', () => {
-      currentRoomId = filterRoom.value;
-      renderMeterReadingsList();
+  // Checkbox chỉ hiện phòng chưa ghi
+  const filterUnrecorded = document.getElementById('filterUnrecorded');
+  if (filterUnrecorded) {
+    filterUnrecorded.addEventListener('change', () => {
+      showOnlyUnrecorded = filterUnrecorded.checked;
+      filterTableRows();
     });
   }
 
-  // Table actions delegation
+  // Nút "Tạo danh sách phòng"
+  const btnGenerateList = document.getElementById('btnGenerateList');
+  if (btnGenerateList) {
+    btnGenerateList.addEventListener('click', handleGenerateList);
+  }
+
+  // Nút "Lưu tất cả"
+  const btnSaveAll = document.getElementById('btnSaveAll');
+  if (btnSaveAll) {
+    btnSaveAll.addEventListener('click', handleSaveAll);
+  }
+
+  // Gán sự kiện input trên table body để nhập số tức thời (bằng cơ chế Event Delegation)
   const tbody = document.getElementById('metersTableBody');
   if (tbody) {
-    tbody.addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
-      if (!btn) return;
+    tbody.addEventListener('input', (e) => {
+      const input = e.target;
+      if (input.tagName !== 'INPUT' || !input.dataset.roomId) return;
 
-      const id = btn.dataset.id;
-      if (!id) return;
+      const roomId = input.dataset.roomId;
+      const type = input.dataset.type; // 'electricityNew' or 'waterNew'
+      const value = input.value.trim();
 
-      if (btn.classList.contains('btn-edit-reading')) {
-        handleEdit(id);
-      } else if (btn.classList.contains('btn-delete-reading')) {
-        handleDelete(id);
-      }
+      const row = tableRows.find(r => r.roomId === roomId);
+      if (!row) return;
+
+      row[type] = value === '' ? '' : Number(value);
+      row.isSaved = false; // Đánh dấu chưa lưu vì đã thay đổi
+
+      // Chạy tính toán, kiểm lỗi và cảnh báo bất thường
+      validateAndCalculateRow(row);
+
+      // Cập nhật giao diện của hàng hiện tại
+      updateRowUI(row);
+      updateSummaryCards();
     });
   }
 }
 
-function handleEdit(id) {
-  const reading = getReadingById(id);
-  if (!reading) return;
+// ─── LOGIC TẠO DANH SÁCH PHÒNG ─────────────────────────────────
 
-  openMeterReadingForm({
-    reading,
-    defaultMonth: currentMonth,
-    defaultYear: currentYear,
-    onSave: (data) => {
-      const res = updateReading(id, data);
-      if (res.warnings && res.warnings.length > 0) {
-        showToast(res.warnings.join(' | '), 'warning');
-      } else {
-        showToast('Cập nhật chỉ số điện nước thành công!', 'success');
-      }
-      renderUnrecordedAlert();
-      renderMeterReadingsList();
+function handleGenerateList() {
+  const rooms = getRooms();
+  const activeRooms = rooms.filter(r => hasActiveContractInMonth(r.id, currentMonth, currentYear));
+  const contracts = StorageService.getAll(STORAGE_KEYS.CONTRACTS);
+
+  let addedCount = 0;
+
+  activeRooms.forEach(room => {
+    // Nếu phòng chưa có trong hàng hiển thị bảng
+    const exists = tableRows.some(r => r.roomId === room.id);
+    if (!exists) {
+      const activeContract = contracts.find(c =>
+        c.roomId === room.id &&
+        c.status === 'active' &&
+        hasActiveContractInMonth(room.id, currentMonth, currentYear)
+      );
+      const tenant = activeContract ? getTenantById(activeContract.tenantId) : null;
+      const tenantName = tenant ? tenant.fullName : 'Không có đại diện';
+
+      const prevReading = getPreviousReading(room.id, currentMonth, currentYear);
+      const elecOld = prevReading ? prevReading.electricityNew : 0;
+      const waterOld = prevReading ? prevReading.waterNew : 0;
+
+      tableRows.push({
+        id: `temp-${room.id}`,
+        roomId: room.id,
+        roomName: room.name,
+        tenantName: tenantName,
+        electricityOld: elecOld,
+        electricityNew: '',
+        electricityUsage: 0,
+        waterOld: waterOld,
+        waterNew: '',
+        waterUsage: 0,
+        isSaved: false,
+        error: '',
+        isAbnormal: false,
+        warning: ''
+      });
+      addedCount++;
     }
   });
+
+  if (addedCount > 0) {
+    showToast(`Đã nạp ${addedCount} phòng cần ghi vào bảng nhập liệu.`, 'success');
+    filterTableRows();
+    updateSummaryCards();
+  } else {
+    showToast('Tất cả phòng cần ghi trong kỳ này đã có sẵn trong bảng.', 'info');
+  }
 }
 
-function handleDelete(id) {
-  const reading = getReadingById(id);
-  if (!reading) return;
+// ─── LOGIC LƯU HÀNG LOẠT ───────────────────────────────────────
 
-  const room = getRoomById(reading.roomId);
-  const roomName = room ? room.name : reading.roomId;
+function handleSaveAll() {
+  const unsavedRows = tableRows.filter(r => !r.isSaved);
+  if (unsavedRows.length === 0) {
+    showToast('Tất cả các dòng hiện tại đã được lưu vào hệ thống.', 'info');
+    return;
+  }
 
-  showConfirmDialog(
-    'Xóa bản ghi chỉ số',
-    `Bạn có chắc chắn muốn xóa ghi nhận chỉ số tháng ${reading.month}/${reading.year} của phòng <strong>${roomName}</strong> không?`,
-    () => {
-      try {
-        deleteReading(id);
-        showToast('Xóa bản ghi chỉ số thành công.', 'success');
-        renderUnrecordedAlert();
-        renderMeterReadingsList();
-      } catch (err) {
-        showToast(err.message, 'danger');
+  // 1. Kiểm tra nếu có bất kỳ hàng nào chứa lỗi số mới nhỏ hơn cũ
+  const errorRow = unsavedRows.find(r => r.error);
+  if (errorRow) {
+    showToast(`Vui lòng sửa lỗi chỉ số của ${errorRow.roomName} trước khi lưu!`, 'danger');
+    return;
+  }
+
+  // 2. Kiểm tra nếu có hàng nào điền dở dang (chỉ điền một chỉ số mới)
+  const incompleteRow = unsavedRows.find(r => r.electricityNew === '' || r.waterNew === '');
+  if (incompleteRow) {
+    showToast(`Vui lòng điền đủ cả chỉ số điện và nước cho ${incompleteRow.roomName}!`, 'warning');
+    return;
+  }
+
+  let saveCount = 0;
+  const warnMessages = [];
+
+  unsavedRows.forEach(row => {
+    const data = {
+      roomId: row.roomId,
+      month: currentMonth,
+      year: currentYear,
+      electricityOld: row.electricityOld,
+      electricityNew: Number(row.electricityNew),
+      waterOld: row.waterOld,
+      waterNew: Number(row.waterNew)
+    };
+
+    try {
+      if (row.id && !row.id.startsWith('temp-')) {
+        // Cập nhật bản ghi cũ
+        const res = updateReading(row.id, data);
+        if (res.warnings && res.warnings.length > 0) {
+          warnMessages.push(...res.warnings);
+        }
+      } else {
+        // Tạo mới bản ghi
+        const res = createReading(data);
+        row.id = res.reading.id;
+        if (res.warnings && res.warnings.length > 0) {
+          warnMessages.push(...res.warnings);
+        }
       }
+      row.isSaved = true;
+      saveCount++;
+    } catch (err) {
+      showToast(`Lỗi khi lưu phòng ${row.roomName}: ${err.message}`, 'danger');
     }
-  );
+  });
+
+  if (saveCount > 0) {
+    if (warnMessages.length > 0) {
+      showToast(`Đã lưu ${saveCount} phòng. Phát hiện biến động: ${warnMessages.slice(0, 2).join(' | ')}`, 'warning');
+    } else {
+      showToast(`Đã lưu thành công chỉ số cho ${saveCount} phòng!`, 'success');
+    }
+
+    // Làm mới bảng và tính toán lại tổng quan
+    initializeTable();
+  }
 }

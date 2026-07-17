@@ -53,8 +53,11 @@ export function createServiceConfig(data) {
     calcMethod: data.calcMethod,
     unitPrice: toNumberOrDefault(data.unitPrice, 0),
     unit: data.unit.trim(),
-    status: 'active', // Mặc định là active khi tạo mới
-    description: (data.description || '').trim()
+    status: data.status || 'active',
+    startDate: data.startDate || new Date().toISOString().split('T')[0],
+    endDate: data.endDate || '',
+    description: (data.description || '').trim(),
+    createdAt: new Date().toISOString()
   };
 
   return StorageService.create(KEY, newConfig);
@@ -88,12 +91,11 @@ export function updateServiceConfig(id, data) {
     calcMethod: merged.calcMethod,
     unitPrice: toNumberOrDefault(merged.unitPrice, config.unitPrice),
     unit: merged.unit.trim(),
-    description: (merged.description || '').trim()
+    description: (merged.description || '').trim(),
+    startDate: merged.startDate || config.startDate || '',
+    endDate: merged.endDate !== undefined ? merged.endDate : (config.endDate || ''),
+    status: merged.status || config.status || 'active'
   };
-
-  if (data.status !== undefined) {
-    changes.status = data.status;
-  }
 
   return StorageService.update(KEY, id, changes);
 }

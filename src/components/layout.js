@@ -38,6 +38,10 @@ export function renderLayout(rootElement) {
           <i class="bi bi-lightning-charge me-2"></i>
           <span class="menu-text">Điện nước</span>
         </a>
+        <a class="nav-link d-flex align-items-center" href="/meters-history" data-link data-page="meters-history" data-testid="menu-meters-history">
+          <i class="bi bi-clock-history me-2"></i>
+          <span class="menu-text">Lịch sử điện nước</span>
+        </a>
         <a class="nav-link d-flex align-items-center" href="/services" data-link data-page="services" data-testid="menu-services">
           <i class="bi bi-gear-wide-connected me-2"></i>
           <span class="menu-text">Dịch vụ</span>

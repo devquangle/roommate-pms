@@ -23,6 +23,7 @@ import { showToast } from '../components/toast.js';
 import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openPaymentForm } from '../components/payment-form.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
+import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentMethod = '';
@@ -106,7 +107,11 @@ function populateRoomFilter() {
   if (!filterRoom) return;
 
   const rooms = getRooms();
-  const options = rooms.map(r => `<option value="${r.id}" ${currentRoomId === r.id ? 'selected' : ''}>${r.name}</option>`).join('');
+  const options = rooms.map(r => {
+    const nameText = r.name.startsWith('Phòng') ? r.name : 'Phòng ' + r.name;
+    const statusText = ROOM_STATUS_LABELS[r.status] || r.status;
+    return `<option value="${r.id}" ${currentRoomId === r.id ? 'selected' : ''}>${nameText} (${statusText})</option>`;
+  }).join('');
   filterRoom.innerHTML = '<option value="">Tất cả phòng</option>' + options;
 
   initSearchableSelect(filterRoom);

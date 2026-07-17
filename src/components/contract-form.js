@@ -4,7 +4,7 @@ import { getRooms } from '../services/room-service.js';
 import { getTenants } from '../services/tenant-service.js';
 import { getContracts } from '../services/contract-service.js';
 import { formatCurrency } from '../utils/currency-utils.js';
-import { ROOM_STATUS, CONTRACT_STATUS } from '../constants/statuses.js';
+import { ROOM_STATUS, CONTRACT_STATUS, ROOM_STATUS_LABELS } from '../constants/statuses.js';
 import { openTenantForm } from './tenant-form.js';
 import { hasOverlappingContract } from '../business/contract-utils.js';
 import { initSearchableSelect } from './searchable-select.js';
@@ -54,11 +54,15 @@ export function openContractForm({ contract = null, onSave }) {
                       <label class="form-label">Phòng <span class="text-danger">*</span></label>
                       <select class="form-select form-select-sm" id="contractRoom" required>
                         <option value="">-- Chọn phòng --</option>
-                        ${eligibleRooms.map(r => `
-                          <option value="${r.id}" ${isEdit && contract.roomId === r.id ? 'selected' : ''}>
-                            ${r.name}
-                          </option>
-                        `).join('')}
+                        ${eligibleRooms.map(r => {
+                          const nameText = r.name.startsWith('Phòng') ? r.name : 'Phòng ' + r.name;
+                          const statusText = ROOM_STATUS_LABELS[r.status] || r.status;
+                          return `
+                            <option value="${r.id}" ${isEdit && contract.roomId === r.id ? 'selected' : ''}>
+                              ${nameText} - ${formatCurrency(r.price)} (${statusText})
+                            </option>
+                          `;
+                        }).join('')}
                       </select>
                     </div>
                     <div class="col-md-6">

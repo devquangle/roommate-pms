@@ -28,6 +28,7 @@ import { openTenantProfile } from '../components/tenant-profile.js';
 import { renderPagination } from '../components/pagination.js';
 import { getRooms } from '../services/room-service.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
+import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentKeyword = '';
@@ -43,7 +44,11 @@ export function renderTenantsPage(container) {
   currentPage = 1;
 
   const rooms = getRooms();
-  const roomOptions = rooms.map(r => `<option value="${r.id}">Phòng ${r.name}</option>`).join('');
+  const roomOptions = rooms.map(r => {
+    const nameText = r.name.startsWith('Phòng') ? r.name : 'Phòng ' + r.name;
+    const statusText = ROOM_STATUS_LABELS[r.status] || r.status;
+    return `<option value="${r.id}">${nameText} (${statusText})</option>`;
+  }).join('');
 
   container.innerHTML = `
     <div data-testid="tenants-page">
@@ -325,7 +330,7 @@ function handleHistory(id) {
           return `
             <div class="rental-history-item ${isActive ? 'history-active' : ''}">
               <div class="d-flex justify-content-between mb-1 fw-bold">
-                <span>Phòng ${roomName}</span>
+                <span>${roomName.startsWith('Phòng') ? roomName : 'Phòng ' + roomName}</span>
                 <span class="badge ${badgeClass}">${badgeLabel}</span>
               </div>
               <div class="small text-muted">

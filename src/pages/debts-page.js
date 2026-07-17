@@ -21,6 +21,7 @@ import { formatCurrency } from '../utils/currency-utils.js';
 import { formatDateToDisplay } from '../utils/date-utils.js';
 import { openInvoiceDetail } from '../components/invoice-detail.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
+import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentRoomId = '';
@@ -139,7 +140,11 @@ function populateRoomFilter() {
   if (!filterRoom) return;
 
   const rooms = getRooms();
-  const options = rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+  const options = rooms.map(r => {
+    const nameText = r.name.startsWith('Phòng') ? r.name : 'Phòng ' + r.name;
+    const statusText = ROOM_STATUS_LABELS[r.status] || r.status;
+    return `<option value="${r.id}">${nameText} (${statusText})</option>`;
+  }).join('');
   filterRoom.innerHTML = '<option value="">Tất cả phòng</option>' + options;
 
   initSearchableSelect(filterRoom);

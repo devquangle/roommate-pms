@@ -2,7 +2,7 @@
 
 /**
  * Trang quản lý hóa đơn.
- * Hỗ trợ danh sách hóa đơn, các bộ lọc, tìm kiếm, lập hóa đơn đơn lẻ/hàng loạt, chốt, hủy, xóa bản nháp, in hóa đơn, hiển thị tổng thu/nợ.
+ * Hỗ trợ danh sách hóa đơn, các bộ lọc, tìm kiếm, lập hóa đơn đơn lẻ/hàng loạt, chốt, hủy, xóa bản nháp, in hóa đơn, hiển thị 5 card thống kê.
  */
 
 import '../styles/invoices.css';
@@ -17,11 +17,13 @@ import {
   finalizeInvoice,
   cancelInvoice,
   deleteDraftInvoice,
-  filterInvoices,
-  getInvoiceByRoomAndMonth
+  filterInvoices
 } from '../services/invoice-service.js';
 
 import { getRooms, getRoomById } from '../services/room-service.js';
+import { getActiveContractByRoom } from '../services/contract-service.js';
+import { getTenantById } from '../services/tenant-service.js';
+import { calculateDaysOverdue } from '../services/debt-service.js';
 import { formatCurrency } from '../utils/currency-utils.js';
 import { formatDateToDisplay } from '../utils/date-utils.js';
 import { showToast } from '../components/toast.js';
@@ -39,109 +41,142 @@ let currentStatus = '';
 let currentKeyword = '';
 
 export function renderInvoicesPage(container) {
+  const rooms = getRooms();
+
   container.innerHTML = `
     <div data-testid="invoices-page">
-      <!-- Summary Cards (Tổng tiền, Đã thu, Còn nợ) -->
-      <div class="row g-3 mb-4" id="invoicesSummaryCards">
-        <!-- Tổng tiền -->
-        <div class="col-md-4">
-          <div class="card invoice-summary-card bg-primary text-white">
-            <div class="card-body p-3">
-              <span class="small text-white-50">Tổng tiền phải thu</span>
-              <h4 class="mt-1 mb-0" id="totalAmountText" data-testid="sum-total-amount">0 ₫</h4>
-            </div>
+      <!-- 5 Card Thống kê Tài chính -->
+      <div class="row g-3 mb-4 row-cols-1 row-cols-sm-2 row-cols-md-5" id="invoicesSummaryCards">
+        <!-- Tổng hóa đơn tháng -->
+        <div class="col">
+          <div class="card border-0 shadow-sm rounded p-3 bg-white h-100">
+            <div class="small text-muted fw-bold text-uppercase mb-1" style="font-size: 11px;">Tổng hóa đơn tháng</div>
+            <div class="fs-4 fw-bold text-dark" id="statTotalCount">0</div>
+            <div class="small text-muted mt-1" id="statTotalAmount">0 ₫</div>
           </div>
         </div>
-        <!-- Đã thu -->
-        <div class="col-md-4">
-          <div class="card invoice-summary-card bg-success text-white">
-            <div class="card-body p-3">
-              <span class="small text-white-50">Đã thu</span>
-              <h4 class="mt-1 mb-0" id="totalPaidText" data-testid="sum-paid-amount">0 ₫</h4>
-            </div>
+        <!-- Đã thanh toán -->
+        <div class="col">
+          <div class="card border-0 shadow-sm rounded p-3 bg-white h-100">
+            <div class="small text-muted fw-bold text-uppercase mb-1" style="font-size: 11px;">Đã thanh toán</div>
+            <div class="fs-4 fw-bold text-success" id="statPaidCount">0</div>
+            <div class="small text-muted mt-1" id="statPaidAmount">0 ₫</div>
           </div>
         </div>
-        <!-- Còn nợ -->
-        <div class="col-md-4">
-          <div class="card invoice-summary-card bg-danger text-white">
-            <div class="card-body p-3">
-              <span class="small text-white-50">Còn nợ (Công nợ)</span>
-              <h4 class="mt-1 mb-0" id="totalDebtText" data-testid="sum-remaining-debt">0 ₫</h4>
-            </div>
+        <!-- Chưa thanh toán -->
+        <div class="col">
+          <div class="card border-0 shadow-sm rounded p-3 bg-white h-100">
+            <div class="small text-muted fw-bold text-uppercase mb-1" style="font-size: 11px;">Chưa thanh toán</div>
+            <div class="fs-4 fw-bold text-warning" id="statUnpaidCount">0</div>
+            <div class="small text-muted mt-1" id="statUnpaidAmount">0 ₫</div>
+          </div>
+        </div>
+        <!-- Thanh toán một phần -->
+        <div class="col">
+          <div class="card border-0 shadow-sm rounded p-3 bg-white h-100">
+            <div class="small text-muted fw-bold text-uppercase mb-1" style="font-size: 11px;">Thanh toán một phần</div>
+            <div class="fs-4 fw-bold text-info" id="statPartialCount">0</div>
+            <div class="small text-muted mt-1" id="statPartialAmount">0 ₫</div>
+          </div>
+        </div>
+        <!-- Quá hạn -->
+        <div class="col">
+          <div class="card border-0 shadow-sm rounded p-3 bg-danger bg-opacity-10 border border-danger-subtle h-100">
+            <div class="small text-danger fw-bold text-uppercase mb-1" style="font-size: 11px;">Quá hạn</div>
+            <div class="fs-4 fw-bold text-danger" id="statOverdueCount">0</div>
+            <div class="small text-danger mt-1" id="statOverdueAmount">0 ₫</div>
           </div>
         </div>
       </div>
 
       <!-- Toolbar -->
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <h4 class="mb-0">Hóa đơn điện nước</h4>
+        <h4 class="mb-0 fw-bold text-dark">Hóa đơn điện nước</h4>
         <div class="d-flex gap-2">
-          <button class="btn btn-outline-primary btn-sm" id="btnBatchInvoice" data-testid="btn-batch-invoice">
-            ⚡ Lập hóa đơn hàng loạt
+          <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" id="btnBatchInvoice" data-testid="btn-batch-invoice">
+            <i class="bi bi-lightning-charge-fill"></i> Tạo hóa đơn hàng loạt
           </button>
-          <button class="btn btn-primary btn-sm" id="btnAddInvoice" data-testid="btn-add-invoice">
-            + Lập hóa đơn phòng
+          <button class="btn btn-primary btn-sm d-flex align-items-center gap-1" id="btnAddInvoice" data-testid="btn-add-invoice">
+            <i class="bi bi-plus-circle"></i> Tạo hóa đơn
           </button>
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <!-- Tìm theo mã -->
-        <input type="text" class="form-control form-control-sm" style="max-width: 200px;" id="invoiceSearch" data-testid="input-search-invoice"
-          placeholder="Tìm theo mã hóa đơn..." />
+      <!-- Bộ lọc và Tìm kiếm -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3 bg-white p-3 border rounded shadow-sm">
+        <!-- Tìm theo mã hoặc phòng -->
+        <div style="flex: 1; min-width: 200px;">
+          <input type="text" class="form-control form-control-sm" id="invoiceSearch" data-testid="input-search-invoice"
+            placeholder="Tìm theo mã hoặc phòng..." />
+        </div>
 
         <!-- Lọc tháng -->
-        <select class="form-select form-select-sm" style="max-width: 110px;" id="filterMonth" data-testid="filter-month">
-          <option value="">Tất cả tháng</option>
-          ${Array.from({ length: 12 }, (_, i) => i + 1).map(m => `
-            <option value="${m}" ${currentMonth === m ? 'selected' : ''}>Tháng ${m}</option>
-          `).join('')}
-        </select>
+        <div style="width: 120px;">
+          <select class="form-select form-select-sm" id="filterMonth" data-testid="filter-month">
+            <option value="">Tất cả tháng</option>
+            ${Array.from({ length: 12 }, (_, i) => i + 1).map(m => `
+              <option value="${m}" ${currentMonth === m ? 'selected' : ''}>Tháng ${String(m).padStart(2, '0')}</option>
+            `).join('')}
+          </select>
+        </div>
 
         <!-- Lọc năm -->
-        <input type="number" class="form-control form-control-sm" style="max-width: 80px;" id="filterYear" data-testid="filter-year"
-          value="${currentYear}" />
+        <div style="width: 90px;">
+          <input type="number" class="form-control form-control-sm" id="filterYear" data-testid="filter-year"
+            value="${currentYear}" placeholder="Năm" />
+        </div>
 
         <!-- Lọc phòng -->
-        <select class="form-select form-select-sm" style="max-width: 140px;" id="filterRoom" data-testid="filter-room">
-          <option value="">Tất cả phòng</option>
-        </select>
+        <div style="width: 180px;">
+          <select class="form-select form-select-sm" id="filterRoom" data-testid="filter-room">
+            <option value="">Tất cả phòng</option>
+          </select>
+        </div>
 
         <!-- Lọc trạng thái -->
-        <select class="form-select form-select-sm" style="max-width: 160px;" id="filterStatus" data-testid="filter-status">
-          <option value="">Tất cả trạng thái</option>
-          <option value="draft">Bản nháp</option>
-          <option value="unpaid">Chưa thanh toán</option>
-          <option value="partial">Thanh toán một phần</option>
-          <option value="paid">Đã thanh toán</option>
-          <option value="cancelled">Đã hủy</option>
-        </select>
+        <div style="width: 180px;">
+          <select class="form-select form-select-sm" id="filterStatus" data-testid="filter-status">
+            <option value="">Tất cả trạng thái</option>
+            <option value="draft">Bản nháp</option>
+            <option value="unpaid">Chưa thanh toán</option>
+            <option value="partial">Thanh toán một phần</option>
+            <option value="paid">Đã thanh toán</option>
+            <option value="overdue">Quá hạn</option>
+            <option value="cancelled">Đã hủy</option>
+          </select>
+        </div>
       </div>
 
-      <!-- Table -->
-      <div class="table-responsive">
-        <table class="table table-hover align-middle" data-testid="invoices-table">
-          <thead class="table-light">
-            <tr>
-              <th>Mã hóa đơn</th>
-              <th>Phòng</th>
-              <th>Thời gian</th>
-              <th>Hạn đóng</th>
-              <th class="text-end">Phải thanh toán</th>
-              <th class="text-end">Đã trả</th>
-              <th class="text-end">Còn nợ</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody id="invoicesTableBody" data-testid="invoices-table-body">
-          </tbody>
-        </table>
+      <!-- Bảng danh sách hóa đơn -->
+      <div class="card border-0 shadow-sm rounded overflow-hidden">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" data-testid="invoices-table">
+            <thead class="table-light border-bottom">
+              <tr>
+                <th>Mã hóa đơn</th>
+                <th>Phòng</th>
+                <th>Người thuê</th>
+                <th class="text-center">Tháng</th>
+                <th class="text-end">Tiền phòng</th>
+                <th class="text-end">Điện nước</th>
+                <th class="text-end">Dịch vụ</th>
+                <th class="text-end">Tổng tiền</th>
+                <th class="text-end">Đã trả</th>
+                <th class="text-end">Còn nợ</th>
+                <th class="text-center" style="min-width: 100px;">Hạn thanh toán</th>
+                <th class="text-center">Trạng thái</th>
+                <th class="text-center" style="min-width: 140px;">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="invoicesTableBody" data-testid="invoices-table-body">
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div id="invoicesEmpty" class="text-muted text-center d-none p-4" data-testid="invoices-empty">
-        Không tìm thấy hóa đơn nào phù hợp.
+      <div id="invoicesEmpty" class="text-muted text-center d-none p-5 bg-white border rounded shadow-sm mt-3" data-testid="invoices-empty">
+        <i class="bi bi-clipboard-x fs-1 text-muted mb-2"></i>
+        <p class="mb-0">Không tìm thấy hóa đơn nào phù hợp.</p>
       </div>
     </div>
   `;
@@ -169,38 +204,85 @@ function populateRoomFilter() {
   initSearchableSelect(filterRoom);
 }
 
-// ─── FINANCIAL SUMMARY ─────────────────────────────────────────
+// ─── FINANCIAL SUMMARY ───
+// Tính toán 5 card thống kê dựa trên tháng/năm/phòng đang chọn
 
 function renderFinancialSummary() {
-  const totText = document.getElementById('totalAmountText');
-  const paidText = document.getElementById('totalPaidText');
-  const debtText = document.getElementById('totalDebtText');
-  if (!totText || !paidText || !debtText) return;
+  const statTotalCount = document.getElementById('statTotalCount');
+  const statTotalAmount = document.getElementById('statTotalAmount');
+  const statPaidCount = document.getElementById('statPaidCount');
+  const statPaidAmount = document.getElementById('statPaidAmount');
+  const statUnpaidCount = document.getElementById('statUnpaidCount');
+  const statUnpaidAmount = document.getElementById('statUnpaidAmount');
+  const statPartialCount = document.getElementById('statPartialCount');
+  const statPartialAmount = document.getElementById('statPartialAmount');
+  const statOverdueCount = document.getElementById('statOverdueCount');
+  const statOverdueAmount = document.getElementById('statOverdueAmount');
+
+  if (!statTotalCount) return;
 
   const filters = {
     month: currentMonth || undefined,
     year: currentYear || undefined,
-    roomId: currentRoomId || undefined,
-    status: currentStatus || undefined
+    roomId: currentRoomId || undefined
   };
 
   let list = filterInvoices(filters);
 
-  // Tìm theo mã nếu có
+  // Áp dụng tìm kiếm theo keyword (nếu có) vào thống kê để khớp dữ liệu
   if (currentKeyword) {
-    list = list.filter(inv => inv.id.toLowerCase().includes(currentKeyword.toLowerCase()));
+    const kw = currentKeyword.toLowerCase();
+    list = list.filter(inv => {
+      const room = getRoomById(inv.roomId);
+      const roomName = room ? room.name.toLowerCase() : '';
+      return inv.id.toLowerCase().includes(kw) || roomName.includes(kw) || inv.roomId.toLowerCase().includes(kw);
+    });
   }
 
   // Loại bỏ các hóa đơn đã hủy khỏi tổng kết tài chính
   const activeInvoices = list.filter(inv => inv.status !== 'cancelled');
 
-  const total = activeInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
-  const paid = activeInvoices.reduce((sum, inv) => sum + inv.paidAmount, 0);
-  const debt = activeInvoices.reduce((sum, inv) => sum + inv.remainingDebt, 0);
+  let totalCount = 0, totalSum = 0;
+  let paidCount = 0, paidSum = 0;
+  let unpaidCount = 0, unpaidSum = 0;
+  let partialCount = 0, partialSum = 0;
+  let overdueCount = 0, overdueSum = 0;
 
-  totText.textContent = formatCurrency(total);
-  paidText.textContent = formatCurrency(paid);
-  debtText.textContent = formatCurrency(debt);
+  activeInvoices.forEach(inv => {
+    const isOverdue = (inv.status === 'unpaid' || inv.status === 'partial') && calculateDaysOverdue(inv.dueDate, new Date()) > 0;
+    
+    totalCount++;
+    totalSum += inv.totalAmount;
+
+    if (inv.status === 'paid') {
+      paidCount++;
+      paidSum += inv.paidAmount;
+    } else if (isOverdue) {
+      overdueCount++;
+      overdueSum += inv.remainingDebt;
+    } else if (inv.status === 'unpaid') {
+      unpaidCount++;
+      unpaidSum += inv.remainingDebt;
+    } else if (inv.status === 'partial') {
+      partialCount++;
+      partialSum += inv.remainingDebt;
+    }
+  });
+
+  statTotalCount.textContent = totalCount;
+  statTotalAmount.textContent = formatCurrency(totalSum);
+
+  statPaidCount.textContent = paidCount;
+  statPaidAmount.textContent = formatCurrency(paidSum);
+
+  statUnpaidCount.textContent = unpaidCount;
+  statUnpaidAmount.textContent = formatCurrency(unpaidSum);
+
+  statPartialCount.textContent = partialCount;
+  statPartialAmount.textContent = formatCurrency(partialSum);
+
+  statOverdueCount.textContent = overdueCount;
+  statOverdueAmount.textContent = formatCurrency(overdueSum);
 }
 
 // ─── RENDER LIST ───────────────────────────────────────────────
@@ -213,14 +295,29 @@ function renderInvoicesList() {
   const filters = {
     month: currentMonth || undefined,
     year: currentYear || undefined,
-    roomId: currentRoomId || undefined,
-    status: currentStatus || undefined
+    roomId: currentRoomId || undefined
   };
+
+  // Nếu lọc status khác "overdue" thì truyền cho service, riêng "overdue" ta tự lọc bên ngoài
+  if (currentStatus && currentStatus !== 'overdue') {
+    filters.status = currentStatus;
+  }
 
   let list = filterInvoices(filters);
 
+  // Tìm theo mã hoặc tên phòng
   if (currentKeyword) {
-    list = list.filter(inv => inv.id.toLowerCase().includes(currentKeyword.toLowerCase()));
+    const kw = currentKeyword.toLowerCase();
+    list = list.filter(inv => {
+      const room = getRoomById(inv.roomId);
+      const roomName = room ? room.name.toLowerCase() : '';
+      return inv.id.toLowerCase().includes(kw) || roomName.includes(kw) || inv.roomId.toLowerCase().includes(kw);
+    });
+  }
+
+  // Tự lọc thêm trạng thái quá hạn
+  if (currentStatus === 'overdue') {
+    list = list.filter(inv => (inv.status === 'unpaid' || inv.status === 'partial') && calculateDaysOverdue(inv.dueDate, new Date()) > 0);
   }
 
   if (list.length === 0) {
@@ -235,10 +332,28 @@ function renderInvoicesList() {
     const room = getRoomById(item.roomId);
     const roomName = room ? room.name : item.roomId;
 
+    // Lấy thông tin người thuê đại diện
+    const contract = getActiveContractByRoom(item.roomId);
+    const tenant = contract ? getTenantById(contract.tenantId) : null;
+    const tenantName = tenant ? tenant.fullName : '<span class="text-muted small">Chưa thuê</span>';
+
+    // Tính toán cấu phần hóa đơn
+    const roomFee = item.roomFee || 0;
+    const utilitiesFee = (item.electricityFee || 0) + (item.waterFee || 0);
+    const servicesFee = item.otherServicesFee || 0;
+
+    // Tính toán quá hạn
+    const isOverdue = (item.status === 'unpaid' || item.status === 'partial') && calculateDaysOverdue(item.dueDate, new Date()) > 0;
+
     let statusClass = 'badge-invoice-draft';
     let statusLabel = 'Bản nháp';
+    let trClass = '';
 
-    if (item.status === 'unpaid') {
+    if (isOverdue) {
+      statusClass = 'bg-danger text-white px-2 py-1 rounded small';
+      statusLabel = 'Quá hạn';
+      trClass = 'table-danger border-danger-subtle'; // Nổi bật dòng màu đỏ/cam
+    } else if (item.status === 'unpaid') {
       statusClass = 'badge-invoice-unpaid';
       statusLabel = 'Chưa thanh toán';
     } else if (item.status === 'partial') {
@@ -256,20 +371,24 @@ function renderInvoicesList() {
     const actionButtons = buildActionButtons(item);
 
     return `
-      <tr data-testid="invoice-row-${item.id}">
+      <tr class="${trClass}" data-testid="invoice-row-${item.id}">
         <td>
-          <a href="#" class="btn-view-invoice text-primary text-decoration-none" data-id="${item.id}" data-testid="btn-view-invoice-${item.id}">
-            ${item.id.substring(0, 10)}…
+          <a href="#" class="btn-view-invoice text-primary text-decoration-none fw-semibold" data-id="${item.id}" data-testid="btn-view-invoice-${item.id}">
+            ${item.id.substring(0, 8).toUpperCase()}…
           </a>
         </td>
-        <td><strong>${roomName}</strong></td>
-        <td>Tháng ${item.month}/${item.year}</td>
-        <td>${formatDateToDisplay(item.dueDate)}</td>
-        <td class="text-end fw-semibold text-primary">${formatCurrency(item.totalAmount)}</td>
+        <td><strong>${roomName.startsWith('Phòng') ? roomName : 'Phòng ' + roomName}</strong></td>
+        <td>${tenantName}</td>
+        <td class="text-center">Tháng ${item.month}/${item.year}</td>
+        <td class="text-end text-dark">${formatCurrency(roomFee)}</td>
+        <td class="text-end text-dark">${formatCurrency(utilitiesFee)}</td>
+        <td class="text-end text-dark">${formatCurrency(servicesFee)}</td>
+        <td class="text-end fw-bold text-primary">${formatCurrency(item.totalAmount)}</td>
         <td class="text-end text-success">${formatCurrency(item.paidAmount)}</td>
         <td class="text-end text-danger">${formatCurrency(item.remainingDebt)}</td>
-        <td><span class="badge ${statusClass}">${statusLabel}</span></td>
-        <td>
+        <td class="text-center text-muted small">${formatDateToDisplay(item.dueDate)}</td>
+        <td class="text-center"><span class="badge ${statusClass}">${statusLabel}</span></td>
+        <td class="text-center">
           <div class="btn-group gap-1">
             ${actionButtons}
           </div>
@@ -283,20 +402,20 @@ function buildActionButtons(invoice) {
   const btns = [];
 
   // Xem chi tiết (luôn có)
-  btns.push(`<button class="btn btn-outline-info btn-sm btn-detail-invoice" data-id="${invoice.id}" data-testid="btn-detail-invoice-${invoice.id}" title="Xem chi tiết">👁</button>`);
+  btns.push(`<button class="btn btn-outline-info btn-sm btn-detail-invoice" data-id="${invoice.id}" data-testid="btn-detail-invoice-${invoice.id}" title="Xem chi tiết"><i class="bi bi-eye"></i></button>`);
 
   if (invoice.status === 'draft') {
     // Sửa nháp
-    btns.push(`<button class="btn btn-outline-primary btn-sm btn-edit-invoice" data-id="${invoice.id}" data-testid="btn-edit-invoice-${invoice.id}" title="Sửa nháp">✏️</button>`);
+    btns.push(`<button class="btn btn-outline-primary btn-sm btn-edit-invoice" data-id="${invoice.id}" data-testid="btn-edit-invoice-${invoice.id}" title="Sửa nháp"><i class="bi bi-pencil"></i></button>`);
     // Chốt hóa đơn
-    btns.push(`<button class="btn btn-outline-success btn-sm btn-finalize-invoice" data-id="${invoice.id}" data-testid="btn-finalize-invoice-${invoice.id}" title="Chốt hóa đơn">✓</button>`);
+    btns.push(`<button class="btn btn-outline-success btn-sm btn-finalize-invoice" data-id="${invoice.id}" data-testid="btn-finalize-invoice-${invoice.id}" title="Chốt hóa đơn"><i class="bi bi-check-circle"></i></button>`);
     // Xóa nháp
-    btns.push(`<button class="btn btn-outline-danger btn-sm btn-delete-invoice" data-id="${invoice.id}" data-testid="btn-delete-invoice-${invoice.id}" title="Xóa nháp">✕</button>`);
+    btns.push(`<button class="btn btn-outline-danger btn-sm btn-delete-invoice" data-id="${invoice.id}" data-testid="btn-delete-invoice-${invoice.id}" title="Xóa nháp"><i class="bi bi-trash"></i></button>`);
   }
 
   if (invoice.status === 'unpaid') {
     // Hủy hóa đơn (chỉ khi chưa trả)
-    btns.push(`<button class="btn btn-outline-warning btn-sm btn-cancel-invoice" data-id="${invoice.id}" data-testid="btn-cancel-invoice-${invoice.id}" title="Hủy hóa đơn">⏸</button>`);
+    btns.push(`<button class="btn btn-outline-warning btn-sm btn-cancel-invoice" data-id="${invoice.id}" data-testid="btn-cancel-invoice-${invoice.id}" title="Hủy hóa đơn"><i class="bi bi-x-circle"></i></button>`);
   }
 
   return btns.join('');
@@ -305,11 +424,12 @@ function buildActionButtons(invoice) {
 // ─── EVENT BINDING ─────────────────────────────────────────────
 
 function bindEvents() {
+  const rooms = getRooms();
+
   // Lập hóa đơn phòng đơn lẻ
   const btnAdd = document.getElementById('btnAddInvoice');
   if (btnAdd) {
     btnAdd.addEventListener('click', () => {
-      // Mở confirm dialog hoặc prompt đơn giản để chọn phòng
       const options = rooms.map(r => {
         const nameText = r.name.startsWith('Phòng') ? r.name : 'Phòng ' + r.name;
         const statusText = ROOM_STATUS_LABELS[r.status] || r.status;
@@ -324,7 +444,7 @@ function bindEvents() {
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title">Chọn phòng lập hóa đơn</h5>
+                <h5 class="modal-title fw-bold">Chọn phòng lập hóa đơn</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
@@ -351,8 +471,8 @@ function bindEvents() {
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary" id="btnConfirmGenerateInvoice" data-testid="btn-confirm-generate-invoice">Tạo hóa đơn</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnConfirmGenerateInvoice" data-testid="btn-confirm-generate-invoice">Tạo hóa đơn</button>
               </div>
             </div>
           </div>
@@ -486,15 +606,15 @@ function bindEvents() {
 
       e.preventDefault();
 
-      if (target.classList.contains('btn-view-invoice') || target.classList.contains('btn-detail-invoice')) {
+      if (target.classList.contains('btn-view-invoice') || target.classList.contains('btn-detail-invoice') || target.closest('.btn-view-invoice')) {
         handleView(id);
-      } else if (target.classList.contains('btn-edit-invoice')) {
+      } else if (target.classList.contains('btn-edit-invoice') || target.closest('.btn-edit-invoice')) {
         handleEdit(id);
-      } else if (target.classList.contains('btn-finalize-invoice')) {
+      } else if (target.classList.contains('btn-finalize-invoice') || target.closest('.btn-finalize-invoice')) {
         handleFinalize(id);
-      } else if (target.classList.contains('btn-delete-invoice')) {
+      } else if (target.classList.contains('btn-delete-invoice') || target.closest('.btn-delete-invoice')) {
         handleDelete(id);
-      } else if (target.classList.contains('btn-cancel-invoice')) {
+      } else if (target.classList.contains('btn-cancel-invoice') || target.closest('.btn-cancel-invoice')) {
         handleCancel(id);
       }
     });

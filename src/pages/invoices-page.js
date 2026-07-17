@@ -31,6 +31,7 @@ import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openInvoiceForm } from '../components/invoice-form.js';
 import { openInvoiceDetail } from '../components/invoice-detail.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
+import { renderPagination } from '../components/pagination.js';
 import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
@@ -39,6 +40,8 @@ let currentYear = new Date().getFullYear();
 let currentRoomId = '';
 let currentStatus = '';
 let currentKeyword = '';
+let currentPage = 1;
+const itemsPerPage = 10;
 
 export function renderInvoicesPage(container) {
   const rooms = getRooms();
@@ -148,8 +151,8 @@ export function renderInvoicesPage(container) {
       </div>
 
       <!-- Bảng danh sách hóa đơn -->
-      <div class="card border-0 shadow-sm rounded overflow-hidden">
-        <div class="table-responsive">
+      <div class="card border-0 shadow-sm rounded">
+        <div class="table-responsive" >
           <table class="table table-hover align-middle mb-0" data-testid="invoices-table">
             <thead class="table-light border-bottom">
               <tr>
@@ -165,7 +168,7 @@ export function renderInvoicesPage(container) {
                 <th class="text-end">Còn nợ</th>
                 <th class="text-center" style="min-width: 100px;">Hạn thanh toán</th>
                 <th class="text-center">Trạng thái</th>
-                <th class="text-center" style="min-width: 140px;">Thao tác</th>
+                <th class="text-end" style="min-width: 140px;">Thao tác</th>
               </tr>
             </thead>
             <tbody id="invoicesTableBody" data-testid="invoices-table-body">
@@ -173,6 +176,9 @@ export function renderInvoicesPage(container) {
           </table>
         </div>
       </div>
+
+      <!-- Phân trang -->
+      <div id="invoicesPaginationContainer" class="mt-3"></div>
 
       <div id="invoicesEmpty" class="text-muted text-center d-none p-5 bg-white border rounded shadow-sm mt-3" data-testid="invoices-empty">
         <i class="bi bi-clipboard-x fs-1 text-muted mb-2"></i>
@@ -315,20 +321,36 @@ function renderInvoicesList() {
     });
   }
 
-  // Tự lọc thêm trạng thái quá hạn
   if (currentStatus === 'overdue') {
     list = list.filter(inv => (inv.status === 'unpaid' || inv.status === 'partial') && calculateDaysOverdue(inv.dueDate, new Date()) > 0);
   }
 
+  const paginationContainer = document.getElementById('invoicesPaginationContainer');
+
   if (list.length === 0) {
     tbody.innerHTML = '';
     emptyEl && emptyEl.classList.remove('d-none');
+    if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
 
   emptyEl && emptyEl.classList.add('d-none');
 
-  tbody.innerHTML = list.map(item => {
+  // Xử lý phân trang
+  const totalItems = list.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  if (currentPage > totalPages && totalPages > 0) {
+    currentPage = totalPages;
+  }
+  
+  if (paginationContainer) {
+    paginationContainer.innerHTML = renderPagination(currentPage, totalItems, itemsPerPage);
+  }
+
+  const start = (currentPage - 1) * itemsPerPage;
+  const paginatedList = list.slice(start, start + itemsPerPage);
+
+  tbody.innerHTML = paginatedList.map(item => {
     const room = getRoomById(item.roomId);
     const roomName = room ? room.name : item.roomId;
 
@@ -388,9 +410,14 @@ function renderInvoicesList() {
         <td class="text-end text-danger">${formatCurrency(item.remainingDebt)}</td>
         <td class="text-center text-muted small">${formatDateToDisplay(item.dueDate)}</td>
         <td class="text-center"><span class="badge ${statusClass}">${statusLabel}</span></td>
-        <td class="text-center">
-          <div class="btn-group gap-1">
-            ${actionButtons}
+        <td class="text-end">
+          <div class="dropdown">
+            <button class="btn btn-sm btn-light border-0 rounded-circle p-1" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" title="Thao tác">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 150px;">
+              ${actionButtons}
+            </ul>
           </div>
         </td>
       </tr>
@@ -399,26 +426,28 @@ function renderInvoicesList() {
 }
 
 function buildActionButtons(invoice) {
-  const btns = [];
+  const items = [];
 
   // Xem chi tiết (luôn có)
-  btns.push(`<button class="btn btn-outline-info btn-sm btn-detail-invoice" data-id="${invoice.id}" data-testid="btn-detail-invoice-${invoice.id}" title="Xem chi tiết"><i class="bi bi-eye"></i></button>`);
+  items.push(`<li><a class="dropdown-item btn-detail-invoice" href="#" data-id="${invoice.id}" data-testid="btn-detail-invoice-${invoice.id}"><i class="bi bi-eye text-info me-2"></i>Xem chi tiết</a></li>`);
 
   if (invoice.status === 'draft') {
     // Sửa nháp
-    btns.push(`<button class="btn btn-outline-primary btn-sm btn-edit-invoice" data-id="${invoice.id}" data-testid="btn-edit-invoice-${invoice.id}" title="Sửa nháp"><i class="bi bi-pencil"></i></button>`);
+    items.push(`<li><a class="dropdown-item btn-edit-invoice" href="#" data-id="${invoice.id}" data-testid="btn-edit-invoice-${invoice.id}"><i class="bi bi-pencil text-primary me-2"></i>Cập nhật</a></li>`);
     // Chốt hóa đơn
-    btns.push(`<button class="btn btn-outline-success btn-sm btn-finalize-invoice" data-id="${invoice.id}" data-testid="btn-finalize-invoice-${invoice.id}" title="Chốt hóa đơn"><i class="bi bi-check-circle"></i></button>`);
+    items.push(`<li><a class="dropdown-item btn-finalize-invoice" href="#" data-id="${invoice.id}" data-testid="btn-finalize-invoice-${invoice.id}"><i class="bi bi-check-circle text-success me-2"></i>Chốt đơn</a></li>`);
     // Xóa nháp
-    btns.push(`<button class="btn btn-outline-danger btn-sm btn-delete-invoice" data-id="${invoice.id}" data-testid="btn-delete-invoice-${invoice.id}" title="Xóa nháp"><i class="bi bi-trash"></i></button>`);
+    items.push(`<li><hr class="dropdown-divider"></li>`);
+    items.push(`<li><a class="dropdown-item btn-delete-invoice text-danger" href="#" data-id="${invoice.id}" data-testid="btn-delete-invoice-${invoice.id}"><i class="bi bi-trash text-danger me-2"></i>Xóa</a></li>`);
   }
 
   if (invoice.status === 'unpaid') {
     // Hủy hóa đơn (chỉ khi chưa trả)
-    btns.push(`<button class="btn btn-outline-warning btn-sm btn-cancel-invoice" data-id="${invoice.id}" data-testid="btn-cancel-invoice-${invoice.id}" title="Hủy hóa đơn"><i class="bi bi-x-circle"></i></button>`);
+    items.push(`<li><hr class="dropdown-divider"></li>`);
+    items.push(`<li><a class="dropdown-item btn-cancel-invoice text-warning" href="#" data-id="${invoice.id}" data-testid="btn-cancel-invoice-${invoice.id}"><i class="bi bi-x-circle text-warning me-2"></i>Hủy hóa đơn</a></li>`);
   }
 
-  return btns.join('');
+  return items.join('');
 }
 
 // ─── EVENT BINDING ─────────────────────────────────────────────
@@ -430,83 +459,15 @@ function bindEvents() {
   const btnAdd = document.getElementById('btnAddInvoice');
   if (btnAdd) {
     btnAdd.addEventListener('click', () => {
-      const options = rooms.map(r => {
-        const nameText = r.name.startsWith('Phòng') ? r.name : 'Phòng ' + r.name;
-        const statusText = ROOM_STATUS_LABELS[r.status] || r.status;
-        return `<option value="${r.id}">${nameText} (${statusText})</option>`;
-      }).join('');
-
-      const dialogContainer = document.getElementById('confirm-dialog-container');
-      if (!dialogContainer) return;
-
-      dialogContainer.innerHTML = `
-        <div class="modal fade" id="selectRoomForInvoiceModal" tabindex="-1" aria-hidden="true" data-testid="select-room-invoice-modal">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title fw-bold">Chọn phòng lập hóa đơn</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <div id="selectRoomInvoiceError" class="alert alert-danger d-none" data-testid="select-room-invoice-error"></div>
-                <div class="mb-3">
-                  <label for="selectRoomId" class="form-label">Chọn phòng</label>
-                  <select class="form-select" id="selectRoomId" data-testid="select-room-id">
-                    ${options}
-                  </select>
-                </div>
-                <div class="row g-2">
-                  <div class="col-6">
-                    <label for="selectMonthVal" class="form-label">Tháng</label>
-                    <select class="form-select" id="selectMonthVal" data-testid="select-month-val">
-                      ${Array.from({ length: 12 }, (_, i) => i + 1).map(m => `
-                        <option value="${m}" ${currentMonth === m ? 'selected' : ''}>Tháng ${m}</option>
-                      `).join('')}
-                    </select>
-                  </div>
-                  <div class="col-6">
-                    <label for="selectYearVal" class="form-label">Năm</label>
-                    <input type="number" class="form-control" id="selectYearVal" data-testid="select-year-val" value="${currentYear}" />
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary btn-sm" id="btnConfirmGenerateInvoice" data-testid="btn-confirm-generate-invoice">Tạo hóa đơn</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      const modalEl = document.getElementById('selectRoomForInvoiceModal');
-      const bsModal = new window.bootstrap.Modal(modalEl);
-
-      document.getElementById('btnConfirmGenerateInvoice').addEventListener('click', () => {
-        const roomId = document.getElementById('selectRoomId').value;
-        const month = Number(document.getElementById('selectMonthVal').value);
-        const year = Number(document.getElementById('selectYearVal').value);
-        const errorEl = document.getElementById('selectRoomInvoiceError');
-
-        try {
-          generateInvoiceForRoom(roomId, month, year);
-          bsModal.hide();
-          showToast('Lập hóa đơn nháp thành công!', 'success');
-          renderFinancialSummary();
-          renderInvoicesList();
-        } catch (err) {
-          errorEl.textContent = err.message;
-          errorEl.classList.remove('d-none');
-        }
-      });
-
-      modalEl.addEventListener('hidden.bs.modal', () => {
-        dialogContainer.innerHTML = '';
-      });
-
-      bsModal.show();
+      openInvoiceForm();
     });
   }
+
+  // Lắng nghe event từ InvoiceCreateModal để refresh danh sách
+  document.addEventListener('invoices-updated', () => {
+    renderFinancialSummary();
+    renderInvoicesList();
+  }, { once: false });
 
   // Lập hóa đơn hàng loạt
   const btnBatch = document.getElementById('btnBatchInvoice');
@@ -545,6 +506,7 @@ function bindEvents() {
       clearTimeout(debounce);
       debounce = setTimeout(() => {
         currentKeyword = searchInput.value.trim();
+        currentPage = 1;
         renderFinancialSummary();
         renderInvoicesList();
       }, 300);
@@ -556,6 +518,7 @@ function bindEvents() {
   if (filterMonth) {
     filterMonth.addEventListener('change', () => {
       currentMonth = filterMonth.value ? Number(filterMonth.value) : '';
+      currentPage = 1;
       renderFinancialSummary();
       renderInvoicesList();
     });
@@ -568,6 +531,7 @@ function bindEvents() {
       const year = Number(filterYear.value);
       if (!isNaN(year) && year >= 2000) {
         currentYear = year;
+        currentPage = 1;
         renderFinancialSummary();
         renderInvoicesList();
       }
@@ -579,6 +543,7 @@ function bindEvents() {
   if (filterRoom) {
     filterRoom.addEventListener('change', () => {
       currentRoomId = filterRoom.value;
+      currentPage = 1;
       renderFinancialSummary();
       renderInvoicesList();
     });
@@ -589,8 +554,25 @@ function bindEvents() {
   if (filterStatus) {
     filterStatus.addEventListener('change', () => {
       currentStatus = filterStatus.value;
+      currentPage = 1;
       renderFinancialSummary();
       renderInvoicesList();
+    });
+  }
+
+  // Pagination
+  const paginationContainer = document.getElementById('invoicesPaginationContainer');
+  if (paginationContainer) {
+    paginationContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-page');
+      if (btn) {
+        e.preventDefault();
+        const page = Number(btn.dataset.page);
+        if (!isNaN(page) && page > 0) {
+          currentPage = page;
+          renderInvoicesList();
+        }
+      }
     });
   }
 

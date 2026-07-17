@@ -45,7 +45,7 @@ const routes = {
  */
 function renderNotFoundPage(container) {
   container.innerHTML = `
-    <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 300px;" data-testid="not-found-page">
+    <div class="d-flex flex-column align-items-center justify-content-center"  data-testid="not-found-page">
       <h1 class="display-1 text-muted">404</h1>
       <p class="lead text-muted">Trang bạn tìm không tồn tại.</p>
       <a href="/dashboard" class="btn btn-primary mt-3" data-link data-testid="btn-back-dashboard">Về Dashboard</a>

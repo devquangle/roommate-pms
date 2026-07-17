@@ -21,6 +21,7 @@ import { openInvoiceDetail } from '../components/invoice-detail.js';
 import { openPaymentForm } from '../components/payment-form.js';
 import { showToast } from '../components/toast.js';
 import { renderPagination } from '../components/pagination.js';
+import { renderEmptyState } from '../components/empty-state.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
 import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
 
@@ -377,7 +378,14 @@ function renderDebtsList() {
 
   if (paginatedList.length === 0) {
     tbody.innerHTML = '';
-    emptyEl && emptyEl.classList.remove('d-none');
+    if (emptyEl) {
+      const hasFilters = currentRoomId || currentMonth || currentYear || currentDebtLevel || showOnlyOverdue;
+      emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-debts', {
+        actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionViewPayments',
+        actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '📅 Xem lịch sử giao dịch'
+      });
+      emptyEl.classList.remove('d-none');
+    }
     if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
@@ -531,6 +539,49 @@ function bindEvents() {
             });
           }
         });
+      }
+    });
+  }
+
+  // Xử lý Empty State click actions
+  const emptyEl = document.getElementById('debtsEmpty');
+  if (emptyEl) {
+    emptyEl.addEventListener('click', (e) => {
+      const btnClear = e.target.closest('#btnEmptyActionClearFilters');
+      if (btnClear) {
+        e.preventDefault();
+        currentRoomId = '';
+        currentMonth = '';
+        currentYear = '';
+        currentDebtLevel = '';
+        showOnlyOverdue = false;
+        currentPage = 1;
+
+        const filterRoom = document.getElementById('filterRoom');
+        if (filterRoom) {
+          filterRoom.value = '';
+          if (filterRoom.dataset.searchableSelectInitialized) {
+            import('../components/searchable-select.js').then(SS => {
+              SS.initSearchableSelect(filterRoom);
+            });
+          }
+        }
+        
+        const filterMonth = document.getElementById('filterMonth');
+        if (filterMonth) filterMonth.value = '';
+        const filterYear = document.getElementById('filterYear');
+        if (filterYear) filterYear.value = '';
+        const filterDebtLevel = document.getElementById('filterDebtLevel');
+        if (filterDebtLevel) filterDebtLevel.value = '';
+        const filterOverdue = document.getElementById('filterOverdue');
+        if (filterOverdue) filterOverdue.checked = false;
+
+        renderDebtsList();
+      }
+      const btnViewPay = e.target.closest('#btnEmptyActionViewPayments');
+      if (btnViewPay) {
+        e.preventDefault();
+        window.location.hash = '#/payments';
       }
     });
   }

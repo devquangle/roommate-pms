@@ -28,6 +28,7 @@ import { filterInvoices } from '../services/invoice-service.js';
 import { getReadingByRoomAndMonth } from '../services/meter-reading-service.js';
 
 import { renderPagination } from '../components/pagination.js';
+import { renderEmptyState } from '../components/empty-state.js';
 
 import { ROOM_STATUS, ROOM_STATUS_LABELS } from '../constants/statuses.js';
 import { formatCurrency } from '../utils/currency-utils.js';
@@ -265,7 +266,14 @@ function renderTableRows() {
   
   if (allList.length === 0) {
     tbody.innerHTML = '';
-    emptyEl && emptyEl.classList.remove('d-none');
+    if (emptyEl) {
+      const hasFilters = currentKeyword || currentStatus || currentType || currentSort;
+      emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-rooms', {
+        actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionAddRoom',
+        actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '➕ Thêm phòng trọ mới'
+      });
+      emptyEl.classList.remove('d-none');
+    }
     if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
@@ -358,7 +366,14 @@ function renderCards() {
 
   if (allList.length === 0) {
     grid.innerHTML = '';
-    emptyEl && emptyEl.classList.remove('d-none');
+    if (emptyEl) {
+      const hasFilters = currentKeyword || currentStatus || currentType || currentSort;
+      emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-rooms', {
+        actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionAddRoom',
+        actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '➕ Thêm phòng trọ mới'
+      });
+      emptyEl.classList.remove('d-none');
+    }
     if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
@@ -549,6 +564,38 @@ function bindToolbarEvents() {
     currentPage = 1;
     renderMainContent();
   });
+
+  // Xử lý Empty State click actions
+  const emptyEl = document.getElementById('roomsEmpty');
+  if (emptyEl) {
+    emptyEl.addEventListener('click', (e) => {
+      const btnAdd = e.target.closest('#btnEmptyActionAddRoom');
+      if (btnAdd) {
+        e.preventDefault();
+        document.getElementById('btnAddRoom')?.click();
+      }
+      const btnClear = e.target.closest('#btnEmptyActionClearFilters');
+      if (btnClear) {
+        e.preventDefault();
+        currentKeyword = '';
+        currentStatus = '';
+        currentType = '';
+        currentSort = '';
+        currentPage = 1;
+
+        const searchInput = document.getElementById('roomSearch');
+        if (searchInput) searchInput.value = '';
+        const filterStatus = document.getElementById('filterStatus');
+        if (filterStatus) filterStatus.value = '';
+        const filterType = document.getElementById('filterType');
+        if (filterType) filterType.value = '';
+        const sortRooms = document.getElementById('sortRooms');
+        if (sortRooms) sortRooms.value = '';
+
+        renderMainContent();
+      }
+    });
+  }
 }
 
 // ─── EVENT: CONTENT (gắn lại mỗi lần render content) ──────────

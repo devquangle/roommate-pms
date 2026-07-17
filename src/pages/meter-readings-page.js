@@ -23,6 +23,7 @@ import { detectAbnormalUsage } from '../business/meter-calculator.js';
 import { showToast } from '../components/toast.js';
 import { STORAGE_KEYS } from '../constants/storage-keys.js';
 import * as StorageService from '../services/storage-service.js';
+import { renderEmptyState } from '../components/empty-state.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 // Mặc định chọn tháng 7 năm 2026 như yêu cầu thiết kế
@@ -316,10 +317,33 @@ function filterTableRows() {
   }
 
   if (filtered.length === 0) {
+    let emptyHtml = '';
+    if (tableRows.length === 0) {
+      emptyHtml = renderEmptyState('no-rooms');
+    } else if (showOnlyUnrecorded) {
+      // Đã ghi hết điện nước
+      emptyHtml = `
+        <div class="empty-state-container text-center py-5 px-4 my-3 bg-white rounded border" style="border: 1px solid #dee2e6; max-width: 600px; margin: 0 auto;">
+          <div class="empty-state-icon-wrapper d-inline-flex align-items-center justify-content-center mb-3 rounded-circle bg-light" style="width: 72px; height: 72px;">
+            <i class="bi bi-check-circle-fill text-success fs-2"></i>
+          </div>
+          <h5 class="empty-state-title fw-bold text-dark mb-2">Đã ghi chỉ số điện nước tháng này</h5>
+          <p class="empty-state-description text-muted small mx-auto mb-4" style="max-width: 460px; line-height: 1.5;">
+            Tất cả các phòng thuê trong kỳ tháng ${currentMonth}/${currentYear} đã được cập nhật chỉ số điện nước đầy đủ.
+          </p>
+          <button type="button" class="btn btn-outline-secondary btn-sm px-4 py-2 fw-semibold shadow-sm" id="btnEmptyActionClearFilters">
+            🧹 Xem tất cả các phòng
+          </button>
+        </div>
+      `;
+    } else {
+      emptyHtml = renderEmptyState('no-results');
+    }
+
     tbody.innerHTML = `
       <tr>
-        <td colspan="10" class="text-center text-muted py-4">
-          Không có phòng nào trong danh sách khớp bộ lọc.
+        <td colspan="10" class="text-center py-4">
+          ${emptyHtml}
         </td>
       </tr>
     `;
@@ -462,6 +486,17 @@ function bindEvents() {
   // Gán sự kiện input trên table body để nhập số tức thời (bằng cơ chế Event Delegation)
   const tbody = document.getElementById('metersTableBody');
   if (tbody) {
+    tbody.addEventListener('click', (e) => {
+      const btnClear = e.target.closest('#btnEmptyActionClearFilters');
+      if (btnClear) {
+        e.preventDefault();
+        showOnlyUnrecorded = false;
+        const filterUnrecorded = document.getElementById('filterUnrecorded');
+        if (filterUnrecorded) filterUnrecorded.checked = false;
+        filterTableRows();
+      }
+    });
+
     tbody.addEventListener('input', (e) => {
       const input = e.target;
       if (input.tagName !== 'INPUT' || !input.dataset.roomId) return;

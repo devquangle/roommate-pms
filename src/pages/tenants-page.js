@@ -26,6 +26,7 @@ import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openTenantForm } from '../components/tenant-form.js';
 import { openTenantProfile } from '../components/tenant-profile.js';
 import { renderPagination } from '../components/pagination.js';
+import { renderEmptyState } from '../components/empty-state.js';
 import { getRooms } from '../services/room-service.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
 import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
@@ -153,7 +154,14 @@ function renderTenantsList() {
 
   if (allList.length === 0) {
     tbody.innerHTML = '';
-    emptyEl && emptyEl.classList.remove('d-none');
+    if (emptyEl) {
+      const hasFilters = currentKeyword || currentStatus || currentRoomId;
+      emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-tenants', {
+        actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionAddTenant',
+        actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '👤 Thêm khách thuê mới'
+      });
+      emptyEl.classList.remove('d-none');
+    }
     if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
@@ -302,6 +310,45 @@ function bindEvents() {
         case 'archive':
           handleArchive(id);
           break;
+      }
+    });
+  }
+
+  // Xử lý Empty State click actions
+  const emptyEl = document.getElementById('tenantsEmpty');
+  if (emptyEl) {
+    emptyEl.addEventListener('click', (e) => {
+      const btnAdd = e.target.closest('#btnEmptyActionAddTenant');
+      if (btnAdd) {
+        e.preventDefault();
+        document.getElementById('btnAddTenant')?.click();
+      }
+      const btnClear = e.target.closest('#btnEmptyActionClearFilters');
+      if (btnClear) {
+        e.preventDefault();
+        currentKeyword = '';
+        currentStatus = '';
+        currentRoomId = '';
+        currentPage = 1;
+
+        const searchInput = document.getElementById('tenantSearch');
+        if (searchInput) searchInput.value = '';
+        const filterStatus = document.getElementById('filterStatus');
+        if (filterStatus) filterStatus.value = '';
+        
+        // Reset room filter
+        const filterRoom = document.getElementById('filterRoom');
+        if (filterRoom) {
+          filterRoom.value = '';
+          // Cần cập nhật lại giá trị searchable select nếu có
+          if (filterRoom.dataset.searchableSelectInitialized) {
+            import('../components/searchable-select.js').then(SS => {
+              SS.initSearchableSelect(filterRoom);
+            });
+          }
+        }
+
+        renderTenantsList();
       }
     });
   }

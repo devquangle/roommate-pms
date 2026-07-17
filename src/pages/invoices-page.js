@@ -32,6 +32,7 @@ import { openInvoiceForm } from '../components/invoice-form.js';
 import { openInvoiceDetail } from '../components/invoice-detail.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
 import { renderPagination } from '../components/pagination.js';
+import { renderEmptyState } from '../components/empty-state.js';
 import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
@@ -330,7 +331,14 @@ function renderInvoicesList() {
 
   if (list.length === 0) {
     tbody.innerHTML = '';
-    emptyEl && emptyEl.classList.remove('d-none');
+    if (emptyEl) {
+      const hasFilters = currentMonth || currentYear || currentRoomId || currentStatus || currentKeyword;
+      emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-invoices', {
+        actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionCreateInvoices',
+        actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '⚙️ Lập hóa đơn hàng loạt'
+      });
+      emptyEl.classList.remove('d-none');
+    }
     if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
@@ -658,6 +666,51 @@ function bindEvents() {
             target.innerHTML = '<i class="bi bi-chevron-down me-1"></i>Xem chi tiết';
           }
         }
+      }
+    });
+  }
+
+  // Xử lý Empty State click actions
+  const emptyEl = document.getElementById('invoicesEmpty');
+  if (emptyEl) {
+    emptyEl.addEventListener('click', (e) => {
+      const btnBatch = e.target.closest('#btnEmptyActionCreateInvoices');
+      if (btnBatch) {
+        e.preventDefault();
+        document.getElementById('btnBatchInvoices')?.click();
+      }
+      const btnClear = e.target.closest('#btnEmptyActionClearFilters');
+      if (btnClear) {
+        e.preventDefault();
+        currentMonth = '';
+        currentYear = '';
+        currentRoomId = '';
+        currentStatus = '';
+        currentKeyword = '';
+        currentPage = 1;
+
+        const filterMonth = document.getElementById('filterMonth');
+        if (filterMonth) filterMonth.value = '';
+        const filterYear = document.getElementById('filterYear');
+        if (filterYear) filterYear.value = '';
+        
+        const filterRoom = document.getElementById('filterRoom');
+        if (filterRoom) {
+          filterRoom.value = '';
+          if (filterRoom.dataset.searchableSelectInitialized) {
+            import('../components/searchable-select.js').then(SS => {
+              SS.initSearchableSelect(filterRoom);
+            });
+          }
+        }
+        
+        const filterStatus = document.getElementById('filterStatus');
+        if (filterStatus) filterStatus.value = '';
+        const searchInput = document.getElementById('invoiceSearch');
+        if (searchInput) searchInput.value = '';
+
+        renderFinancialSummary();
+        renderInvoicesList();
       }
     });
   }

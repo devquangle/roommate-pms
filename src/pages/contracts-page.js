@@ -24,6 +24,7 @@ import {
 import { getRooms, getRoomById } from '../services/room-service.js';
 import { getTenantById } from '../services/tenant-service.js';
 import { renderPagination } from '../components/pagination.js';
+import { renderEmptyState } from '../components/empty-state.js';
 import { formatCurrency } from '../utils/currency-utils.js';
 import { formatDateToDisplay } from '../utils/date-utils.js';
 import { isValidDate } from '../utils/validation-utils.js';
@@ -295,7 +296,14 @@ function renderContractsList() {
 
   if (allFiltered.length === 0) {
     tbody.innerHTML = '';
-    emptyEl && emptyEl.classList.remove('d-none');
+    if (emptyEl) {
+      const hasFilters = currentKeyword || currentFilters.roomId || currentFilters.status || currentFilters.startDate || currentFilters.endDate;
+      emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-contracts', {
+        actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionAddContract',
+        actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '📝 Lập hợp đồng mới'
+      });
+      emptyEl.classList.remove('d-none');
+    }
     if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
@@ -498,6 +506,47 @@ function bindEvents(container) {
         handleCancel(id);
       } else if (target.classList.contains('btn-action-activate')) {
         handleActivate(id);
+      }
+    });
+  }
+
+  // Xử lý Empty State click actions
+  const emptyEl = document.getElementById('contractsEmpty');
+  if (emptyEl) {
+    emptyEl.addEventListener('click', (e) => {
+      const btnAdd = e.target.closest('#btnEmptyActionAddContract');
+      if (btnAdd) {
+        e.preventDefault();
+        document.getElementById('btnAddContract')?.click();
+      }
+      const btnClear = e.target.closest('#btnEmptyActionClearFilters');
+      if (btnClear) {
+        e.preventDefault();
+        currentKeyword = '';
+        currentFilters = {};
+        currentPage = 1;
+
+        const searchInput = document.getElementById('contractSearch');
+        if (searchInput) searchInput.value = '';
+        const filterStatus = document.getElementById('filterStatus');
+        if (filterStatus) filterStatus.value = '';
+        
+        const filterRoom = document.getElementById('filterRoom');
+        if (filterRoom) {
+          filterRoom.value = '';
+          if (filterRoom.dataset.searchableSelectInitialized) {
+            import('../components/searchable-select.js').then(SS => {
+              SS.initSearchableSelect(filterRoom);
+            });
+          }
+        }
+        
+        const filterFromDate = document.getElementById('filterFromDate');
+        if (filterFromDate) filterFromDate.value = '';
+        const filterToDate = document.getElementById('filterToDate');
+        if (filterToDate) filterToDate.value = '';
+
+        renderContractsList();
       }
     });
   }

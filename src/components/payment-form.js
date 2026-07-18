@@ -28,7 +28,7 @@ export function openPaymentForm({ defaultInvoiceId = null, onSave }) {
   const today = new Date().toISOString().split('T')[0];
 
   container.innerHTML = `
-    <div class="modal fade" id="paymentFormModal" tabindex="-1" aria-hidden="true" data-testid="payment-form-modal">
+    <div class="modal fade" id="paymentFormModal" tabindex="-1" role="dialog" aria-modal="true" aria-hidden="true" data-testid="payment-form-modal">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -143,7 +143,7 @@ export function openPaymentForm({ defaultInvoiceId = null, onSave }) {
           </div>
           <div class="modal-footer bg-light">
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
-            <button type="button" class="btn btn-primary btn-sm" id="btnSavePayment" data-testid="btn-payment-save" disabled>Xác nhận thanh toán</button>
+            <button type="submit" form="paymentForm" class="btn btn-primary btn-sm" id="btnSavePayment" data-testid="btn-payment-save" disabled>Xác nhận thanh toán</button>
           </div>
         </div>
       </div>
@@ -275,7 +275,9 @@ export function openPaymentForm({ defaultInvoiceId = null, onSave }) {
   updateInvoiceSummary();
 
   // ── SAVE ──────────────────────────────────────────────────
-  btnSave.addEventListener('click', () => {
+  const formEl = document.getElementById('paymentForm');
+  formEl.addEventListener('submit', (e) => {
+    e.preventDefault();
     const data = {
       invoiceId: defaultInvoiceId || selectInvoice.value,
       amount: inputAmount.value,

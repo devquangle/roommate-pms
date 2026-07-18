@@ -208,7 +208,7 @@ export function renderSettingsPage(container) {
     </div>
 
     <!-- MODAL XÁC NHẬN THAO TÁC NGUY HIỂM -->
-    <div class="modal fade" id="dangerConfirmModal" tabindex="-1" aria-hidden="true" data-testid="danger-confirm-modal">
+    <div class="modal fade" id="dangerConfirmModal" tabindex="-1" role="dialog" aria-modal="true" aria-hidden="true" data-testid="danger-confirm-modal">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header bg-danger text-white">

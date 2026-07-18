@@ -18,7 +18,7 @@ export function openTenantForm({ tenant = null, onSave }) {
   if (!container) return;
 
   container.innerHTML = `
-    <div class="modal fade" id="tenantFormModal" tabindex="-1" aria-hidden="true" data-testid="tenant-form-modal">
+    <div class="modal fade" id="tenantFormModal" tabindex="-1" role="dialog" aria-modal="true" aria-hidden="true" data-testid="tenant-form-modal">
       <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content bg-light">
           <div class="modal-header border-0 pb-2">
@@ -146,7 +146,7 @@ export function openTenantForm({ tenant = null, onSave }) {
           </div>
           <div class="modal-footer border-0 pt-0">
             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
-            <button type="button" class="btn btn-primary px-4" id="btnSaveTenant" data-testid="btn-tenant-save">Lưu khách thuê</button>
+            <button type="submit" form="tenantForm" class="btn btn-primary px-4" id="btnSaveTenant" data-testid="btn-tenant-save">Lưu khách thuê</button>
           </div>
         </div>
       </div>
@@ -187,7 +187,9 @@ export function openTenantForm({ tenant = null, onSave }) {
   }
 
   // ── SAVE & VALIDATION ─────────────────────────────────────
-  btnSave.addEventListener('click', () => {
+  const formEl = document.getElementById('tenantForm');
+  formEl.addEventListener('submit', (e) => {
+    e.preventDefault();
     clearErrors();
 
     const data = {

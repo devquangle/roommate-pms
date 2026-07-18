@@ -1,0 +1,109 @@
+// tests/e2e/rooms.spec.js
+import { test, expect } from '@playwright/test';
+
+test.describe('RoomMate Rooms Management E2E', () => {
+
+  test.beforeEach(async ({ page }) => {
+    // Dọn LocalStorage trước mỗi test
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+  });
+
+  test('should support rooms management flow: add -> view -> edit -> search -> filter -> delete', async ({ page }) => {
+    // 1. Mở trang phòng
+    await page.goto('/rooms');
+    
+    // Check Header Title
+    await expect(page.locator('[data-testid="header-title"]')).toHaveText('Quản lý phòng');
+    
+    // Đảm bảo ở chế độ xem bảng
+    await page.locator('[data-testid="view-table"]').click();
+
+    // 2. Thêm phòng mới
+    await page.locator('[data-testid="btn-add-room"]').click();
+    await expect(page.locator('[data-testid="room-form-modal"]')).toBeVisible();
+
+    // Điền thông tin phòng P999
+    await page.locator('[data-testid="input-room-code"]').fill('P999');
+    await page.locator('[data-testid="input-room-name"]').fill('Phòng 999');
+    await page.locator('[data-testid="input-room-floor"]').fill('Tầng 9');
+    await page.locator('[data-testid="select-room-type"]').selectOption('standard');
+    await page.locator('[data-testid="input-room-area"]').fill('30');
+    await page.locator('[data-testid="input-room-price"]').fill('3000000');
+    await page.locator('[data-testid="input-room-max-tenants"]').fill('4');
+    await page.locator('[data-testid="select-room-status"]').selectOption('available');
+    await page.locator('[data-testid="input-room-desc"]').fill('Mô tả phòng 999');
+    
+    // Lưu phòng
+    await page.locator('[data-testid="btn-room-save"]').click();
+    await expect(page.locator('[data-testid="room-form-modal"]')).toBeHidden();
+
+    // 3. Kiểm tra phòng xuất hiện trong bảng
+    await expect(page.locator('[data-testid="room-row-P999"]')).toBeVisible();
+    await expect(page.locator('[data-testid="room-row-P999"]')).toContainText('Phòng 999');
+    await expect(page.locator('[data-testid="room-row-P999"]')).toContainText('3.000.000');
+
+    // Tạo thêm phòng P888 (ở trạng thái bảo trì) để kiểm thử tìm kiếm & bộ lọc độc lập
+    await page.locator('[data-testid="btn-add-room"]').click();
+    await page.locator('[data-testid="input-room-code"]').fill('P888');
+    await page.locator('[data-testid="input-room-name"]').fill('Phòng 888');
+    await page.locator('[data-testid="input-room-floor"]').fill('Tầng 8');
+    await page.locator('[data-testid="select-room-type"]').selectOption('standard');
+    await page.locator('[data-testid="input-room-area"]').fill('25');
+    await page.locator('[data-testid="input-room-price"]').fill('2000000');
+    await page.locator('[data-testid="input-room-max-tenants"]').fill('2');
+    await page.locator('[data-testid="select-room-status"]').selectOption('maintenance');
+    await page.locator('[data-testid="btn-room-save"]').click();
+    await expect(page.locator('[data-testid="room-row-P888"]')).toBeVisible();
+
+    // 4. Tải lại trang
+    await page.reload();
+
+    // 5. Kiểm tra dữ liệu vẫn tồn tại
+    await expect(page.locator('[data-testid="room-row-P999"]')).toBeVisible();
+    await expect(page.locator('[data-testid="room-row-P888"]')).toBeVisible();
+
+    // 6. Sửa giá phòng P999
+    await page.locator('[data-testid="btn-edit-room-P999"]').click();
+    await expect(page.locator('[data-testid="room-form-modal"]')).toBeVisible();
+    await page.locator('[data-testid="input-room-price"]').fill('3500000');
+    await page.locator('[data-testid="btn-room-save"]').click();
+    await expect(page.locator('[data-testid="room-form-modal"]')).toBeHidden();
+
+    // Kiểm tra giá tiền đã cập nhật
+    await expect(page.locator('[data-testid="room-row-P999"]')).toContainText('3.500.000');
+
+    // 7. Tìm kiếm phòng: Nhập '999'
+    await page.locator('[data-testid="input-search-room"]').fill('999');
+    
+    // Không dùng waitForTimeout bằng cách mong đợi phòng P888 biến mất khỏi DOM/Bảng hiển thị
+    await expect(page.locator('[data-testid="room-row-P888"]')).toBeHidden();
+    await expect(page.locator('[data-testid="room-row-P999"]')).toBeVisible();
+
+    // Xóa ô tìm kiếm để hiển thị lại đầy đủ
+    await page.locator('[data-testid="input-search-room"]').fill('');
+    await expect(page.locator('[data-testid="room-row-P888"]')).toBeVisible();
+
+    // 8. Lọc theo trạng thái: Lọc 'Bảo trì' (maintenance)
+    await page.locator('[data-testid="filter-status"]').selectOption('maintenance');
+    
+    // Phòng P999 (available) sẽ bị ẩn đi, phòng P888 (maintenance) vẫn hiển thị
+    await expect(page.locator('[data-testid="room-row-P999"]')).toBeHidden();
+    await expect(page.locator('[data-testid="room-row-P888"]')).toBeVisible();
+
+    // Reset bộ lọc về 'Tất cả trạng thái'
+    await page.locator('[data-testid="filter-status"]').selectOption('');
+    await expect(page.locator('[data-testid="room-row-P999"]')).toBeVisible();
+
+    // 9. Xóa phòng P999
+    await page.locator('[data-testid="btn-delete-room-P999"]').click();
+    
+    // Chờ hộp thoại xác nhận xuất hiện và Click Xác nhận
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="btn-confirm-ok"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeHidden();
+
+    // 10. Kiểm tra phòng biến mất
+    await expect(page.locator('[data-testid="room-row-P999"]')).toBeHidden();
+  });
+});

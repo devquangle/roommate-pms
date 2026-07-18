@@ -4,7 +4,7 @@ export function showConfirmDialog(title, message, onConfirm) {
   if (!container) return;
 
   container.innerHTML = `
-    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true" data-testid="confirm-modal">
+    <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="confirmModalLabel" aria-hidden="true" data-testid="confirm-modal">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">

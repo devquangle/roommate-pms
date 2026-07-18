@@ -1,0 +1,76 @@
+name: Deploy RoomMate to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Cấu hình permissions tối thiểu cần thiết để deploy GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Cấu hình concurrency để tránh việc deploy đè chồng chéo lên nhau
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  test-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout mã nguồn
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js và bật cache npm để tối ưu thời gian cài đặt
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3. Cài đặt các dependencies sạch qua npm ci
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Cài đặt các Playwright browsers phục vụ E2E test
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      # 5. Chạy unit tests
+      - name: Run Unit Tests
+        run: npx vitest run tests/unit tests/services tests/models.test.js tests/manager.test.js
+
+      # 6. Chạy business tests
+      - name: Run Business Tests
+        run: npx vitest run tests/business
+
+      # 7. Chạy Playwright E2E tests
+      - name: Run Playwright E2E Tests
+        run: npm run test:e2e
+
+      # 8. Build ứng dụng sản phẩm (thư mục đầu ra là dist)
+      - name: Build project
+        run: npm run build
+
+      # 9. Cấu hình GitHub Pages chính thức
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v4
+
+      # 10. Tải lên artifact của thư mục dist lên GitHub Pages Artifacts
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      # 11. Thực hiện Deploy lên GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

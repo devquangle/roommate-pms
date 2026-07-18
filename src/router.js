@@ -64,8 +64,21 @@ function renderNotFoundPage(container) {
  * Ví dụ: "/rooms" -> "rooms", "/" -> "dashboard"
  */
 function getCurrentPath() {
-  const pathname = window.location.pathname;
-  // Loại bỏ dấu "/" ở đầu, nếu rỗng thì mặc định là "dashboard"
+  // 1. Kiểm tra nếu dùng hash
+  const hash = window.location.hash;
+  if (hash) {
+    const path = hash.replace(/^#\/?/, '').replace(/\/$/, '');
+    return path || 'dashboard';
+  }
+
+  // 2. Nếu dùng History API (pathname)
+  const base = import.meta.env.BASE_URL || '/';
+  let pathname = window.location.pathname;
+  
+  if (pathname.startsWith(base)) {
+    pathname = pathname.substring(base.length);
+  }
+  
   const path = pathname.replace(/^\//, '').replace(/\/$/, '');
   return path || 'dashboard';
 }
@@ -127,37 +140,53 @@ function handleRouteChange() {
  * Có thể gọi từ bất kỳ module nào: navigateTo('rooms')
  */
 export function navigateTo(path) {
-  window.history.pushState(null, '', `/${path}`);
-  handleRouteChange();
+  const isHash = !!window.location.hash || window.location.pathname.includes('index.html');
+  if (isHash) {
+    window.location.hash = `/${path}`;
+  } else {
+    const base = import.meta.env.BASE_URL || '/';
+    const cleanBase = base.endsWith('/') ? base : base + '/';
+    window.history.pushState(null, '', `${cleanBase}${path}`);
+    handleRouteChange();
+  }
 }
 
 /**
  * Khởi tạo router:
  * - Lắng nghe popstate (nút back/forward của trình duyệt).
- * - Chặn click vào các link có thuộc tính [data-link] để dùng pushState.
+ * - Lắng nghe hashchange (cho chế độ hash router).
+ * - Chặn click vào các link có thuộc tính [data-link] để dùng pushState/hash.
  * - Nếu đang ở "/" thì redirect về "/dashboard".
  * - Render trang đầu tiên.
  */
 export function initRouter() {
-  // Lắng nghe nút back/forward
+  // Lắng nghe các sự kiện đổi route
   window.addEventListener('popstate', handleRouteChange);
+  window.addEventListener('hashchange', handleRouteChange);
 
-  // Delegate click: chặn tất cả <a data-link> để điều hướng bằng pushState
+  // Delegate click: chặn tất cả <a data-link> để điều hướng bằng pushState/hash
   document.addEventListener('click', (e) => {
     const link = e.target.closest('[data-link]');
     if (link) {
       e.preventDefault();
       const href = link.getAttribute('href');
       if (href) {
-        window.history.pushState(null, '', href);
-        handleRouteChange();
+        const path = href.replace(/^\//, '');
+        navigateTo(path);
       }
     }
   });
 
-  // Nếu đang ở root "/" thì chuyển về "/dashboard" (không reload)
-  if (window.location.pathname === '/' || window.location.pathname === '') {
-    window.history.replaceState(null, '', '/dashboard');
+  const base = import.meta.env.BASE_URL || '/';
+  const pathname = window.location.pathname;
+  const hash = window.location.hash;
+
+  // Nếu đang ở root thì chuyển về "/dashboard"
+  if (!hash) {
+    if (pathname === '/' || pathname === '' || pathname === base || pathname === base.replace(/\/$/, '')) {
+      navigateTo('dashboard');
+      return;
+    }
   }
 
   // Render trang hiện tại

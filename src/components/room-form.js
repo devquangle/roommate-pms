@@ -23,7 +23,7 @@ export function openRoomForm({ room = null, onSave }) {
   const sel = (field, val) => isEdit && room[field] === val ? 'selected' : '';
 
   container.innerHTML = `
-    <div class="modal fade" id="roomFormModal" tabindex="-1" aria-hidden="true" data-testid="room-form-modal">
+    <div class="modal fade" id="roomFormModal" tabindex="-1" role="dialog" aria-modal="true" aria-hidden="true" data-testid="room-form-modal">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
 
@@ -168,7 +168,7 @@ export function openRoomForm({ room = null, onSave }) {
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
               <i class="bi bi-x-lg me-1"></i>Hủy
             </button>
-            <button type="button" class="btn btn-primary" id="btnSaveRoom" data-testid="btn-room-save">
+            <button type="submit" form="roomForm" class="btn btn-primary" id="btnSaveRoom" data-testid="btn-room-save">
               <i class="bi bi-floppy me-1"></i>Lưu phòng
             </button>
           </div>
@@ -251,7 +251,9 @@ export function openRoomForm({ room = null, onSave }) {
   }
 
   // ── SAVE handler ──────────────────────────────────────────
-  btnSave.addEventListener('click', () => {
+  const formEl = document.getElementById('roomForm');
+  formEl.addEventListener('submit', (e) => {
+    e.preventDefault();
     // 1. Local inline validation trước
     if (!validateLocal()) return;
 

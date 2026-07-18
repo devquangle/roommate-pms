@@ -32,6 +32,7 @@ import {
 import { validateInvoice } from '../business/invoice-validator.js';
 import { getRoomById } from './room-service.js';
 import { getReadingByRoomAndMonth } from './meter-reading-service.js';
+import { INVOICE_STATUS } from '../constants/statuses.js';
 
 const KEY = STORAGE_KEYS.INVOICES;
 const CONTRACTS_KEY = STORAGE_KEYS.CONTRACTS;
@@ -329,7 +330,7 @@ export function generateInvoiceForRoom(roomId, month, year = new Date().getFullY
     paidAmount: 0,
     remainingDebt,
     dueDate,
-    status: 'draft',
+    status: INVOICE_STATUS.DRAFT,
     serviceDetails,
     note: `Hóa đơn tiền nhà tháng ${m}/${y} phòng ${room?.name || roomId}`
   };
@@ -428,7 +429,7 @@ export function createInvoice(data) {
     paidAmount: 0,
     remainingDebt,
     dueDate: data.dueDate,
-    status: 'draft',
+    status: INVOICE_STATUS.DRAFT,
     serviceDetails: data.serviceDetails || [],
     note: (data.note || '').trim()
   };
@@ -457,7 +458,7 @@ export function updateDraftInvoice(id, data) {
     throw new Error('Hóa đơn không tồn tại.');
   }
 
-  if (invoice.status !== 'draft') {
+  if (invoice.status !== INVOICE_STATUS.DRAFT) {
     throw new Error('Không thể chỉnh sửa hóa đơn đã chốt.');
   }
 
@@ -522,11 +523,11 @@ export function deleteDraftInvoice(id) {
     throw new Error('Hóa đơn không tồn tại.');
   }
 
-  if (invoice.status === 'paid') {
+  if (invoice.status === INVOICE_STATUS.PAID) {
     throw new Error('Hóa đơn đã thanh toán không được phép xóa.');
   }
 
-  if (invoice.status !== 'draft') {
+  if (invoice.status !== INVOICE_STATUS.DRAFT) {
     throw new Error('Chỉ được phép xóa hóa đơn nháp (draft).');
   }
 
@@ -553,11 +554,11 @@ export function finalizeInvoice(id) {
     throw new Error('Hóa đơn không tồn tại.');
   }
 
-  if (invoice.status !== 'draft') {
+  if (invoice.status !== INVOICE_STATUS.DRAFT) {
     throw new Error('Chỉ có thể chốt hóa đơn nháp (draft).');
   }
 
-  return StorageService.update(KEY, id, { status: 'unpaid' });
+  return StorageService.update(KEY, id, { status: INVOICE_STATUS.UNPAID });
 }
 
 /**
@@ -575,19 +576,19 @@ export function cancelInvoice(id) {
     throw new Error('Hóa đơn không tồn tại.');
   }
 
-  if (invoice.status === 'paid') {
+  if (invoice.status === INVOICE_STATUS.PAID) {
     throw new Error('Không thể hủy hóa đơn đã thanh toán đầy đủ.');
   }
 
-  if (invoice.status === 'partial') {
+  if (invoice.status === INVOICE_STATUS.PARTIAL) {
     throw new Error('Không thể hủy hóa đơn đã phát sinh thanh toán một phần.');
   }
 
-  if (invoice.status === 'cancelled') {
+  if (invoice.status === INVOICE_STATUS.CANCELLED) {
     throw new Error('Hóa đơn đã bị hủy từ trước.');
   }
 
-  return StorageService.update(KEY, id, { status: 'cancelled' });
+  return StorageService.update(KEY, id, { status: INVOICE_STATUS.CANCELLED });
 }
 
 // ─── RECALCULATE ───────────────────────────────────────────────
@@ -606,7 +607,7 @@ export function recalculateInvoice(id) {
     throw new Error('Hóa đơn không tồn tại.');
   }
 
-  if (invoice.status !== 'draft') {
+  if (invoice.status !== INVOICE_STATUS.DRAFT) {
     throw new Error('Hóa đơn đã chốt không thể tính toán lại.');
   }
 

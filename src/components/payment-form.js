@@ -6,6 +6,7 @@ import { getTenantById } from '../services/tenant-service.js';
 import { getActiveContractByRoom, getContractById } from '../services/contract-service.js';
 import { formatCurrency } from '../utils/currency-utils.js';
 import { renderErrorState } from './error-state.js';
+import { INVOICE_STATUS, PAYMENT_METHOD } from '../constants/statuses.js';
 
 /**
  * Mở modal ghi nhận giao dịch thanh toán.
@@ -21,7 +22,7 @@ export function openPaymentForm({ defaultInvoiceId = null, onSave }) {
   // Lấy danh sách các hóa đơn còn nợ (chưa thanh toán xong và đã chốt)
   const allInvoices = filterInvoices();
   const eligibleInvoices = allInvoices.filter(inv =>
-    (inv.status === 'unpaid' || inv.status === 'partial') &&
+    (inv.status === INVOICE_STATUS.UNPAID || inv.status === INVOICE_STATUS.PARTIAL) &&
     inv.remainingDebt > 0
   );
 
@@ -110,8 +111,8 @@ export function openPaymentForm({ defaultInvoiceId = null, onSave }) {
                 <div class="col-md-6">
                   <label for="payMethod" class="form-label small fw-bold">Phương thức thanh toán <span class="text-danger">*</span></label>
                   <select class="form-select form-select-sm" id="payMethod" data-testid="select-method" required>
-                    <option value="transfer">Chuyển khoản ngân hàng</option>
-                    <option value="cash">Tiền mặt</option>
+                    <option value="${PAYMENT_METHOD.TRANSFER}">Chuyển khoản ngân hàng</option>
+                    <option value="${PAYMENT_METHOD.CASH}">Tiền mặt</option>
                   </select>
                 </div>
 

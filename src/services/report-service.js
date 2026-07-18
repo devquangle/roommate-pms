@@ -2,7 +2,7 @@
 
 import * as StorageService from './storage-service.js';
 import { STORAGE_KEYS } from '../constants/storage-keys.js';
-import { ROOM_STATUS } from '../constants/statuses.js';
+import { ROOM_STATUS, INVOICE_STATUS } from '../constants/statuses.js';
 import {
   calculateOccupancyRate,
   sumField,
@@ -66,7 +66,7 @@ export function getFinancialOverview(currentDate = new Date()) {
   const payments = StorageService.getAll(PAYMENTS_KEY);
 
   // Chỉ xét hóa đơn đã chốt, bỏ qua draft và cancelled
-  const activeInvoices = invoices.filter(inv => inv.status !== 'cancelled' && inv.status !== 'draft');
+  const activeInvoices = invoices.filter(inv => inv.status !== INVOICE_STATUS.CANCELLED && inv.status !== INVOICE_STATUS.DRAFT);
 
   const totalDebt = activeInvoices.reduce((sum, inv) => sum + inv.remainingDebt, 0);
   const overdueCount = activeInvoices.filter(inv => calculateDaysOverdue(inv.dueDate, currentDate) > 0).length;
@@ -89,7 +89,7 @@ export function getFinancialOverview(currentDate = new Date()) {
  * @returns {Array<Object>} Mảng các phần tử { monthKey, month, year, revenue, collected }
  */
 export function getMonthlyRevenueAndCollected() {
-  const invoices = StorageService.getAll(INVOICES_KEY).filter(inv => inv.status !== 'cancelled' && inv.status !== 'draft');
+  const invoices = StorageService.getAll(INVOICES_KEY).filter(inv => inv.status !== INVOICE_STATUS.CANCELLED && inv.status !== INVOICE_STATUS.DRAFT);
   const payments = StorageService.getAll(PAYMENTS_KEY);
 
   const monthlyData = {};
@@ -180,10 +180,16 @@ export function getElectricityConsumptionByRoom(month, year) {
  */
 export function getInvoiceStatusRatios() {
   const invoices = StorageService.getAll(INVOICES_KEY);
-  const counts = { draft: 0, unpaid: 0, partial: 0, paid: 0, cancelled: 0 };
+  const counts = {
+    [INVOICE_STATUS.DRAFT]: 0,
+    [INVOICE_STATUS.UNPAID]: 0,
+    [INVOICE_STATUS.PARTIAL]: 0,
+    [INVOICE_STATUS.PAID]: 0,
+    [INVOICE_STATUS.CANCELLED]: 0
+  };
 
   invoices.forEach(inv => {
-    const status = inv.status || 'draft';
+    const status = inv.status || INVOICE_STATUS.DRAFT;
     if (counts[status] !== undefined) {
       counts[status]++;
     }

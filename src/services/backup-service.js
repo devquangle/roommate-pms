@@ -100,6 +100,25 @@ export function createBackupBeforeImport() {
 }
 
 /**
+ * Khôi phục dữ liệu từ bản sao lưu tạm thời đề phòng sự cố import.
+ */
+export function rollbackImport() {
+  const rawRollback = localStorage.getItem('roommate_backup_rollback');
+  if (!rawRollback) return;
+  try {
+    const backup = JSON.parse(rawRollback);
+    resetAllData();
+    for (const [backupKey, storageKey] of Object.entries(BACKUP_KEY_MAP)) {
+      if (backup[backupKey] !== undefined) {
+        localStorage.setItem(storageKey, JSON.stringify(backup[backupKey]));
+      }
+    }
+  } catch (e) {
+    console.error('[BackupService] Lỗi rollback dữ liệu:', e);
+  }
+}
+
+/**
  * Xóa sạch toàn bộ dữ liệu hiện có trong LocalStorage của RoomMate.
  */
 export function resetAllData() {
@@ -136,16 +155,22 @@ export function importData(data, options = { overwrite: false, merge: true }) {
     // Lưu backup đề phòng
     createBackupBeforeImport();
     
-    // Xóa và ghi đè
-    resetAllData();
+    try {
+      // Xóa và ghi đè
+      resetAllData();
 
-    for (const [backupKey, storageKey] of Object.entries(BACKUP_KEY_MAP)) {
-      if (data[backupKey] !== undefined) {
-        localStorage.setItem(storageKey, JSON.stringify(data[backupKey]));
+      for (const [backupKey, storageKey] of Object.entries(BACKUP_KEY_MAP)) {
+        if (data[backupKey] !== undefined) {
+          localStorage.setItem(storageKey, JSON.stringify(data[backupKey]));
+        }
       }
-    }
 
-    return { success: true, mode: 'overwrite' };
+      return { success: true, mode: 'overwrite' };
+    } catch (err) {
+      // Khôi phục lại dữ liệu cũ từ rollback
+      rollbackImport();
+      throw new Error(`Ghi đè dữ liệu thất bại: ${err.message}. Đã khôi phục dữ liệu cũ.`);
+    }
   }
 
   // 3. Xử lý gộp dữ liệu (Merge)

@@ -5,17 +5,17 @@ import { STORAGE_KEYS } from '../constants/storage-keys.js';
 import { validateBackupData } from '../business/import-validator.js';
 import { resetToSeedData } from './seed-service.js';
 
-// Danh sách các key lưu trữ của ứng dụng cần backup/restore
-const KEYS_TO_BACKUP = [
-  STORAGE_KEYS.ROOMS,
-  STORAGE_KEYS.TENANTS,
-  STORAGE_KEYS.CONTRACTS,
-  STORAGE_KEYS.METER_READINGS,
-  STORAGE_KEYS.SERVICE_CONFIGS,
-  STORAGE_KEYS.INVOICES,
-  STORAGE_KEYS.PAYMENTS,
-  STORAGE_KEYS.APP_SETTINGS
-];
+// Bản đồ ánh xạ giữa các key trong file JSON sao lưu (camelCase sạch) và các key LocalStorage thực tế
+export const BACKUP_KEY_MAP = {
+  rooms: STORAGE_KEYS.ROOMS,
+  tenants: STORAGE_KEYS.TENANTS,
+  contracts: STORAGE_KEYS.CONTRACTS,
+  meterReadings: STORAGE_KEYS.METER_READINGS,
+  serviceConfigs: STORAGE_KEYS.SERVICE_CONFIGS,
+  invoices: STORAGE_KEYS.INVOICES,
+  payments: STORAGE_KEYS.PAYMENTS,
+  appSettings: STORAGE_KEYS.APP_SETTINGS
+};
 
 /**
  * Xuất toàn bộ dữ liệu ứng dụng hiện tại thành đối tượng JSON.
@@ -24,10 +24,10 @@ const KEYS_TO_BACKUP = [
  */
 export function exportData() {
   const backup = {};
-  KEYS_TO_BACKUP.forEach(key => {
-    const raw = localStorage.getItem(key);
-    backup[key] = StorageService.safeParse(raw, key === STORAGE_KEYS.APP_SETTINGS ? null : []);
-  });
+  for (const [backupKey, storageKey] of Object.entries(BACKUP_KEY_MAP)) {
+    const raw = localStorage.getItem(storageKey);
+    backup[backupKey] = StorageService.safeParse(raw, backupKey === 'appSettings' ? null : []);
+  }
   return backup;
 }
 
@@ -103,9 +103,9 @@ export function createBackupBeforeImport() {
  * Xóa sạch toàn bộ dữ liệu hiện có trong LocalStorage của RoomMate.
  */
 export function resetAllData() {
-  KEYS_TO_BACKUP.forEach(key => {
-    localStorage.removeItem(key);
-  });
+  for (const storageKey of Object.values(BACKUP_KEY_MAP)) {
+    localStorage.removeItem(storageKey);
+  }
 }
 
 /**
@@ -139,29 +139,29 @@ export function importData(data, options = { overwrite: false, merge: true }) {
     // Xóa và ghi đè
     resetAllData();
 
-    KEYS_TO_BACKUP.forEach(key => {
-      if (data[key] !== undefined) {
-        localStorage.setItem(key, JSON.stringify(data[key]));
+    for (const [backupKey, storageKey] of Object.entries(BACKUP_KEY_MAP)) {
+      if (data[backupKey] !== undefined) {
+        localStorage.setItem(storageKey, JSON.stringify(data[backupKey]));
       }
-    });
+    }
 
     return { success: true, mode: 'overwrite' };
   }
 
   // 3. Xử lý gộp dữ liệu (Merge)
   if (options.merge) {
-    KEYS_TO_BACKUP.forEach(key => {
-      if (data[key] === undefined) return;
+    for (const [backupKey, storageKey] of Object.entries(BACKUP_KEY_MAP)) {
+      if (data[backupKey] === undefined) continue;
 
-      if (key === STORAGE_KEYS.APP_SETTINGS) {
+      if (backupKey === 'appSettings') {
         // Ghi đè cấu hình ứng dụng
-        localStorage.setItem(key, JSON.stringify(data[key]));
-        return;
+        localStorage.setItem(storageKey, JSON.stringify(data[backupKey]));
+        continue;
       }
 
       // Xử lý các collection mảng
-      const currentList = StorageService.getAll(key);
-      const importList = data[key];
+      const currentList = StorageService.getAll(storageKey);
+      const importList = data[backupKey];
 
       importList.forEach(importItem => {
         const index = currentList.findIndex(item => item.id === importItem.id);
@@ -174,8 +174,8 @@ export function importData(data, options = { overwrite: false, merge: true }) {
         }
       });
 
-      localStorage.setItem(key, JSON.stringify(currentList));
-    });
+      localStorage.setItem(storageKey, JSON.stringify(currentList));
+    }
 
     return { success: true, mode: 'merge' };
   }

@@ -29,6 +29,7 @@ import { getReadingByRoomAndMonth } from '../services/meter-reading-service.js';
 
 import { renderPagination } from '../components/pagination.js';
 import { renderEmptyState } from '../components/empty-state.js';
+import { renderRoomsTableSkeleton } from '../components/loading-state.js';
 
 import { ROOM_STATUS, ROOM_STATUS_LABELS } from '../constants/statuses.js';
 import { formatCurrency } from '../utils/currency-utils.js';
@@ -186,36 +187,41 @@ function renderMainContent() {
   const wrapper = document.getElementById('mainContent');
   if (!wrapper) return;
 
-  if (currentView === 'table') {
-    wrapper.innerHTML = `
-      <div class="table-responsive">
-        <table class="table table-hover align-middle" data-testid="rooms-table">
-          <thead class="table-light">
-            <tr>
-              <th>Mã phòng</th>
-              <th>Tên phòng</th>
-              <th>Khu vực</th>
-              <th class="text-end">Giá thuê / Tháng</th>
-              <th class="text-center">Số người</th>
-              <th>Người đại diện</th>
-              <th class="text-end">Công nợ</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody id="roomsTableBody" data-testid="rooms-table-body"></tbody>
-        </table>
-      </div>
-      <div id="paginationContainer" class="mt-3"></div>
-    `;
-    renderTableRows();
-  } else {
-    wrapper.innerHTML = `
-      <div class="row g-3" id="roomsCardContainer" data-testid="rooms-card-container"></div>
-      <div id="paginationContainer" class="mt-4"></div>
-    `;
-    renderCards();
-  }
+  // Render skeleton loading
+  wrapper.innerHTML = renderRoomsTableSkeleton();
+
+  setTimeout(() => {
+    if (currentView === 'table') {
+      wrapper.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" data-testid="rooms-table">
+            <thead class="table-light">
+              <tr>
+                <th>Mã phòng</th>
+                <th>Tên phòng</th>
+                <th>Khu vực</th>
+                <th class="text-end">Giá thuê / Tháng</th>
+                <th class="text-center">Số người</th>
+                <th>Người đại diện</th>
+                <th class="text-end">Công nợ</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="roomsTableBody" data-testid="rooms-table-body"></tbody>
+          </table>
+        </div>
+        <div id="paginationContainer" class="mt-3"></div>
+      `;
+      renderTableRows();
+    } else {
+      wrapper.innerHTML = `
+        <div class="row g-3" id="roomsCardContainer" data-testid="rooms-card-container"></div>
+        <div id="paginationContainer" class="mt-4"></div>
+      `;
+      renderCards();
+    }
+  }, 300);
 
   // Event delegation đã gắn 1 lần trên #mainContent trong renderRoomsPage()
 }

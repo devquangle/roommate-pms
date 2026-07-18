@@ -62,13 +62,9 @@ export function renderLayout(rootElement) {
           <i class="bi bi-bar-chart-line me-2"></i>
           <span class="menu-text">Báo cáo</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/backup" data-link data-page="backup" data-testid="menu-backup">
+        <a class="nav-link d-flex align-items-center border-top border-secondary mt-2 pt-2" href="/backup" data-link data-page="backup" data-testid="menu-backup">
           <i class="bi bi-database-down me-2"></i>
           <span class="menu-text">Sao lưu dữ liệu</span>
-        </a>
-        <a class="nav-link d-flex align-items-center border-top border-secondary mt-2 pt-2" href="/settings" data-link data-page="settings" data-testid="menu-settings">
-          <i class="bi bi-gear me-2"></i>
-          <span class="menu-text">Cài đặt</span>
         </a>
       </nav>
     </aside>
@@ -115,8 +111,7 @@ export function renderLayout(rootElement) {
                 <div class="fw-bold text-dark">Quản lý trọ</div>
                 <div class="text-muted small">admin@roommate.com</div>
               </li>
-              <li><a class="dropdown-item py-2 small" href="/settings" data-link><i class="bi bi-person me-2 text-muted"></i>Hồ sơ</a></li>
-              <li><a class="dropdown-item py-2 small" href="/settings" data-link><i class="bi bi-gear me-2 text-muted"></i>Cài đặt</a></li>
+              <li><a class="dropdown-item py-2 small" href="/backup" data-link><i class="bi bi-database-down me-2 text-muted"></i>Sao lưu dữ liệu</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item py-2 small text-danger" href="#" id="btn-logout"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
             </ul>

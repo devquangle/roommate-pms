@@ -24,6 +24,7 @@ import { showToast } from '../components/toast.js';
 import { STORAGE_KEYS } from '../constants/storage-keys.js';
 import * as StorageService from '../services/storage-service.js';
 import { renderEmptyState } from '../components/empty-state.js';
+import { renderProgressBar } from '../components/loading-state.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 // Mặc định chọn tháng 7 năm 2026 như yêu cầu thiết kế
@@ -598,50 +599,100 @@ function handleSaveAll() {
     return;
   }
 
+  // Hiển thị overlay thanh tiến trình (progress bar)
+  const total = unsavedRows.length;
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.width = '100vw';
+  overlay.style.height = '100vh';
+  overlay.style.zIndex = '9999';
+  overlay.style.background = 'rgba(0, 0, 0, 0.4)';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+
+  const progressCard = document.createElement('div');
+  progressCard.className = 'p-4 bg-white rounded border shadow-sm';
+  progressCard.style.minWidth = '380px';
+  progressCard.style.maxWidth = '480px';
+  progressCard.innerHTML = `
+    <div class="text-center mb-3">
+      <div class="spinner-border text-success mb-2" role="status" style="width: 2rem; height: 2rem;"></div>
+      <h6 class="fw-bold mb-0">Đang lưu chỉ số điện nước hàng loạt</h6>
+    </div>
+    <div id="meterProgressContainer">
+      ${renderProgressBar(0, `Chuẩn bị lưu dữ liệu...`)}
+    </div>
+  `;
+  overlay.appendChild(progressCard);
+  document.body.appendChild(overlay);
+
+  let current = 0;
   let saveCount = 0;
   const warnMessages = [];
 
-  unsavedRows.forEach(row => {
-    const data = {
-      roomId: row.roomId,
-      month: currentMonth,
-      year: currentYear,
-      electricityOld: row.electricityOld,
-      electricityNew: Number(row.electricityNew),
-      waterOld: row.waterOld,
-      waterNew: Number(row.waterNew)
-    };
+  const processNextReading = () => {
+    if (current < total) {
+      const row = unsavedRows[current];
+      const data = {
+        roomId: row.roomId,
+        month: currentMonth,
+        year: currentYear,
+        electricityOld: row.electricityOld,
+        electricityNew: Number(row.electricityNew),
+        waterOld: row.waterOld,
+        waterNew: Number(row.waterNew)
+      };
 
-    try {
-      if (row.id && !row.id.startsWith('temp-')) {
-        // Cập nhật bản ghi cũ
-        const res = updateReading(row.id, data);
-        if (res.warnings && res.warnings.length > 0) {
-          warnMessages.push(...res.warnings);
+      try {
+        if (row.id && !row.id.startsWith('temp-')) {
+          // Cập nhật bản ghi cũ
+          const res = updateReading(row.id, data);
+          if (res.warnings && res.warnings.length > 0) {
+            warnMessages.push(...res.warnings);
+          }
+        } else {
+          // Tạo mới bản ghi
+          const res = createReading(data);
+          row.id = res.reading.id;
+          if (res.warnings && res.warnings.length > 0) {
+            warnMessages.push(...res.warnings);
+          }
         }
-      } else {
-        // Tạo mới bản ghi
-        const res = createReading(data);
-        row.id = res.reading.id;
-        if (res.warnings && res.warnings.length > 0) {
-          warnMessages.push(...res.warnings);
-        }
+        row.isSaved = true;
+        saveCount++;
+      } catch (err) {
+        showToast(`Lỗi khi lưu phòng ${row.roomName}: ${err.message}`, 'danger');
       }
-      row.isSaved = true;
-      saveCount++;
-    } catch (err) {
-      showToast(`Lỗi khi lưu phòng ${row.roomName}: ${err.message}`, 'danger');
-    }
-  });
 
-  if (saveCount > 0) {
-    if (warnMessages.length > 0) {
-      showToast(`Đã lưu ${saveCount} phòng. Phát hiện biến động: ${warnMessages.slice(0, 2).join(' | ')}`, 'warning');
+      current++;
+      const percent = Math.round((current / total) * 100);
+      const container = document.getElementById('meterProgressContainer');
+      if (container) {
+        container.innerHTML = renderProgressBar(percent, `Đang xử lý: ${row.roomName} (${current}/${total})`);
+      }
+
+      // Xử lý dòng tiếp theo sau 150ms để theo dõi tiến trình
+      setTimeout(processNextReading, 150);
     } else {
-      showToast(`Đã lưu thành công chỉ số cho ${saveCount} phòng!`, 'success');
-    }
+      // Hoàn tất, gỡ bỏ overlay
+      overlay.remove();
 
-    // Làm mới bảng và tính toán lại tổng quan
-    initializeTable();
-  }
+      if (saveCount > 0) {
+        if (warnMessages.length > 0) {
+          showToast(`Đã lưu ${saveCount} phòng. Phát hiện biến động: ${warnMessages.slice(0, 2).join(' | ')}`, 'warning');
+        } else {
+          showToast(`Đã lưu thành công chỉ số cho ${saveCount} phòng!`, 'success');
+        }
+
+        // Làm mới bảng và tính toán lại tổng quan
+        initializeTable();
+      }
+    }
+  };
+
+  // Khởi động tiến trình lưu bất đồng bộ
+  processNextReading();
 }

@@ -12,6 +12,7 @@ import { showToast } from './toast.js';
 import { initSearchableSelect } from './searchable-select.js';
 import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
 import { renderErrorState } from './error-state.js';
+import { getButtonLoadingHtml } from './loading-state.js';
 
 let modalInstance = null;
 let containerEl = null;
@@ -428,37 +429,53 @@ function handleSave(status) {
     note: `Hóa đơn chi tiết tháng ${state.month}/${state.year}`
   };
 
-  try {
-    if (state.isEdit) {
-      // Chế độ Cập nhật: gọi callback
-      if (state.onSaveCallback) {
-        invoiceData.status = status === 'unpaid' ? 'unpaid' : 'draft';
-        state.onSaveCallback(invoiceData);
-      }
-      modalInstance.hide();
-    } else {
-      // Chế độ Tạo mới: lưu trực tiếp
-      const inv = createInvoice(invoiceData);
-      
-      // Nếu chốt đơn, đánh dấu là unpaid
-      if (status === 'unpaid') {
-        const invoices = StorageService.getAll(STORAGE_KEYS.INVOICES);
-        const index = invoices.findIndex(i => i.id === inv.id);
-        if (index !== -1) {
-          invoices[index].status = 'unpaid';
-          StorageService.replaceAll(STORAGE_KEYS.INVOICES, invoices);
-        }
-      }
-      
-      showToast(status === 'draft' ? 'Lưu hóa đơn nháp thành công!' : 'Đã chốt hóa đơn thành công!', 'success');
-      modalInstance.hide();
-      
-      // Gửi event để render lại trang invoices
-      document.dispatchEvent(new CustomEvent('invoices-updated'));
-    }
-  } catch (err) {
-    showToast(err.message, 'danger');
+  const btnDraft = document.getElementById('icm-btn-draft');
+  const btnFinalize = document.getElementById('icm-btn-finalize');
+  const activeBtn = status === 'draft' ? btnDraft : btnFinalize;
+  const originalHtml = activeBtn ? activeBtn.innerHTML : '';
+
+  if (btnDraft) btnDraft.disabled = true;
+  if (btnFinalize) btnFinalize.disabled = true;
+  if (activeBtn) {
+    activeBtn.innerHTML = getButtonLoadingHtml(status === 'draft' ? 'Đang lưu...' : 'Đang chốt...');
   }
+
+  setTimeout(() => {
+    try {
+      if (state.isEdit) {
+        // Chế độ Cập nhật: gọi callback
+        if (state.onSaveCallback) {
+          invoiceData.status = status === 'unpaid' ? 'unpaid' : 'draft';
+          state.onSaveCallback(invoiceData);
+        }
+        modalInstance.hide();
+      } else {
+        // Chế độ Tạo mới: lưu trực tiếp
+        const inv = createInvoice(invoiceData);
+        
+        // Nếu chốt đơn, đánh dấu là unpaid
+        if (status === 'unpaid') {
+          const invoices = StorageService.getAll(STORAGE_KEYS.INVOICES);
+          const index = invoices.findIndex(i => i.id === inv.id);
+          if (index !== -1) {
+            invoices[index].status = 'unpaid';
+            StorageService.replaceAll(STORAGE_KEYS.INVOICES, invoices);
+          }
+        }
+        
+        showToast(status === 'draft' ? 'Lưu hóa đơn nháp thành công!' : 'Đã chốt hóa đơn thành công!', 'success');
+        modalInstance.hide();
+        
+        // Gửi event để render lại trang invoices
+        document.dispatchEvent(new CustomEvent('invoices-updated'));
+      }
+    } catch (err) {
+      showToast(err.message, 'danger');
+      if (btnDraft) btnDraft.disabled = false;
+      if (btnFinalize) btnFinalize.disabled = false;
+      if (activeBtn) activeBtn.innerHTML = originalHtml;
+    }
+  }, 400);
 }
 
 // ─── INIT ──────────────────────────────────────────────────────────────

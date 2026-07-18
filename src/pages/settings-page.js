@@ -19,6 +19,7 @@ import {
 import { validateBackupData } from '../business/import-validator.js';
 import { showToast } from '../components/toast.js';
 import { renderErrorState } from '../components/error-state.js';
+import { renderImportLoadingOverlay, getButtonLoadingHtml } from '../components/loading-state.js';
 import {
   SEED_ROOMS,
   SEED_TENANTS,
@@ -444,33 +445,53 @@ function bindEvents() {
       const isOverwrite = mode === 'overwrite';
 
       const executeImport = () => {
-        try {
-          const res = importData(parsedBackupData, {
-            overwrite: isOverwrite,
-            merge: !isOverwrite
-          });
+        const cardImport = document.getElementById('card-import');
+        if (!cardImport) return;
 
-          if (res.success) {
-            showToast(
-              isOverwrite 
-                ? 'Ghi đè dữ liệu thành công! Đã tạo bản rollback tạm thời.' 
-                : 'Gộp dữ liệu phục hồi thành công!', 
-              'success'
-            );
+        // Tạo overlay che phủ card import
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.zIndex = '10';
+        overlay.style.background = 'rgba(255, 255, 255, 0.95)';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.innerHTML = renderImportLoadingOverlay(
+          isOverwrite ? 'Đang ghi đè dữ liệu mới...' : 'Đang gộp dữ liệu phục hồi...'
+        );
+        
+        cardImport.style.position = 'relative';
+        cardImport.appendChild(overlay);
 
-            // Reset UI
-            fileInput.value = '';
-            fileInfo.classList.add('d-none');
-            modeContainer.classList.add('d-none');
-            actionButtons.classList.add('d-none');
-            selectedBackupFile = null;
-            parsedBackupData = null;
-            
-            renderRecordStats();
+        setTimeout(() => {
+          try {
+            const res = importData(parsedBackupData, {
+              overwrite: isOverwrite,
+              merge: !isOverwrite
+            });
+
+            if (res.success) {
+              showToast(
+                isOverwrite 
+                  ? 'Ghi đè dữ liệu thành công! Đang tải lại dữ liệu...' 
+                  : 'Gộp dữ liệu phục hồi thành công! Đang tải lại dữ liệu...', 
+                'success'
+              );
+
+              // Làm mới trang sau 800ms để nạp lại dữ liệu đồng bộ
+              setTimeout(() => {
+                window.location.reload();
+              }, 800);
+            }
+          } catch (err) {
+            showToast(err.message, 'danger');
+            overlay.remove();
           }
-        } catch (err) {
-          showToast(err.message, 'danger');
-        }
+        }, 1000);
       };
 
       if (isOverwrite) {
@@ -488,26 +509,35 @@ function bindEvents() {
   const btnCreateSeed = document.getElementById('btnCreateSeedData');
   if (btnCreateSeed) {
     btnCreateSeed.addEventListener('click', () => {
-      try {
-        const seedDataObj = {
-          [STORAGE_KEYS.ROOMS]: SEED_ROOMS,
-          [STORAGE_KEYS.TENANTS]: SEED_TENANTS,
-          [STORAGE_KEYS.CONTRACTS]: SEED_CONTRACTS,
-          [STORAGE_KEYS.METER_READINGS]: SEED_METER_READINGS,
-          [STORAGE_KEYS.SERVICE_CONFIGS]: SEED_SERVICE_CONFIGS,
-          [STORAGE_KEYS.INVOICES]: SEED_INVOICES,
-          [STORAGE_KEYS.PAYMENTS]: SEED_PAYMENTS,
-          [STORAGE_KEYS.APP_SETTINGS]: SEED_APP_SETTINGS
-        };
+      const originalHtml = btnCreateSeed.innerHTML;
+      btnCreateSeed.disabled = true;
+      btnCreateSeed.innerHTML = getButtonLoadingHtml('Đang tạo dữ liệu mẫu...');
+      
+      setTimeout(() => {
+        try {
+          const seedDataObj = {
+            rooms: SEED_ROOMS,
+            tenants: SEED_TENANTS,
+            contracts: SEED_CONTRACTS,
+            meterReadings: SEED_METER_READINGS,
+            serviceConfigs: SEED_SERVICE_CONFIGS,
+            invoices: SEED_INVOICES,
+            payments: SEED_PAYMENTS,
+            appSettings: SEED_APP_SETTINGS
+          };
 
-        const res = importData(seedDataObj, { overwrite: false, merge: true });
-        if (res.success) {
-          showToast('Đã gộp thêm dữ liệu mẫu dùng thử thành công!', 'success');
-          renderRecordStats();
+          const res = importData(seedDataObj, { overwrite: false, merge: true });
+          if (res.success) {
+            showToast('Đã gộp thêm dữ liệu mẫu dùng thử thành công!', 'success');
+            renderRecordStats();
+          }
+        } catch (err) {
+          showToast(err.message, 'danger');
+        } finally {
+          btnCreateSeed.disabled = false;
+          btnCreateSeed.innerHTML = originalHtml;
         }
-      } catch (err) {
-        showToast(err.message, 'danger');
-      }
+      }, 500);
     });
   }
 
@@ -518,9 +548,24 @@ function bindEvents() {
       triggerDangerAction(
         'Hệ thống sẽ <strong class="text-danger">xóa toàn bộ phòng trọ và hóa đơn hiện tại</strong> để khôi phục lại cấu hình dữ liệu mẫu gốc ban đầu.',
         () => {
-          restoreSeedData();
-          showToast('Khôi phục dữ liệu mẫu gốc thành công!', 'success');
-          renderRecordStats();
+          const originalHtml = btnRestoreSeed.innerHTML;
+          btnRestoreSeed.disabled = true;
+          btnRestoreSeed.innerHTML = getButtonLoadingHtml('Đang khôi phục...');
+          
+          setTimeout(() => {
+            try {
+              restoreSeedData();
+              showToast('Khôi phục dữ liệu mẫu gốc thành công! Đang tải lại...', 'success');
+              renderRecordStats();
+              setTimeout(() => {
+                window.location.reload();
+              }, 500);
+            } catch (err) {
+              showToast(err.message, 'danger');
+              btnRestoreSeed.disabled = false;
+              btnRestoreSeed.innerHTML = originalHtml;
+            }
+          }, 500);
         }
       );
     });
@@ -533,9 +578,24 @@ function bindEvents() {
       triggerDangerAction(
         '<strong class="text-danger">❌ CẢNH BÁO CỰC KỲ NGUY HIỂM:</strong><br>Bạn sẽ mất vĩnh viễn toàn bộ phòng trọ, khách thuê, hóa đơn và lịch sử đóng tiền trong LocalStorage. Hãy chắc chắn bạn đã sao lưu trước khi thực hiện.',
         () => {
-          resetAllData();
-          showToast('Đã xóa sạch cơ sở dữ liệu. Ứng dụng hiện đang trống.', 'info');
-          renderRecordStats();
+          const originalHtml = btnResetDatabase.innerHTML;
+          btnResetDatabase.disabled = true;
+          btnResetDatabase.innerHTML = getButtonLoadingHtml('Đang xóa dữ liệu...');
+          
+          setTimeout(() => {
+            try {
+              resetAllData();
+              showToast('Đã xóa sạch cơ sở dữ liệu. Ứng dụng hiện đang trống. Đang tải lại...', 'info');
+              renderRecordStats();
+              setTimeout(() => {
+                window.location.reload();
+              }, 500);
+            } catch (err) {
+              showToast(err.message, 'danger');
+              btnResetDatabase.disabled = false;
+              btnResetDatabase.innerHTML = originalHtml;
+            }
+          }, 500);
         }
       );
     });

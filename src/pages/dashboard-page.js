@@ -18,39 +18,48 @@ import {
 import { renderStatCard } from '../components/stat-card.js';
 import { renderAlertList } from '../components/alert-list.js';
 import { formatCurrency } from '../utils/currency-utils.js';
+import { renderDashboardSkeleton } from '../components/loading-state.js';
 import Chart from 'chart.js/auto';
 
 // Khai báo biến toàn cục để lưu trữ các thực thể Chart, phục vụ việc hủy chart cũ trước khi vẽ mới
 let revenueChartInstance = null;
 let roomStatusChartInstance = null;
 
-/**
- * Render trang Dashboard.
- *
- * @param {HTMLElement} container
- */
 export function renderDashboardPage(container) {
-  // 1. Thu thập dữ liệu từ ReportService
-  const roomStats = getRoomStats();
-  const tenantStats = getTenantStats();
-  const financial = getFinancialOverview();
-  const monthlyConsumption = getMonthlyConsumption();
-
-  // Tìm chỉ số điện/nước tháng hiện tại
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  const currentMonthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
-  
-  const currentMonthConsumption = monthlyConsumption.find(c => c.monthKey === currentMonthKey) || {
-    totalElectricity: 0,
-    totalWater: 0
-  };
-
-  // 2. Render khung HTML của Dashboard
+  // Render loading skeleton đầu tiên
   container.innerHTML = `
-    <div data-testid="dashboard-page">
+    <div data-testid="dashboard-page" class="pb-5">
+      <h4 class="mb-4 fw-bold"><i class="bi bi-speedometer2 text-primary me-2"></i>Tổng quan hệ thống</h4>
+      <div id="dashboardActualContent">
+        ${renderDashboardSkeleton()}
+      </div>
+    </div>
+  `;
+
+  // Giả lập trễ tải 500ms để người dùng trải nghiệm Loading Skeleton tinh tế
+  setTimeout(() => {
+    // 1. Thu nhập dữ liệu từ ReportService
+    const roomStats = getRoomStats();
+    const tenantStats = getTenantStats();
+    const financial = getFinancialOverview();
+    const monthlyConsumption = getMonthlyConsumption();
+
+    // Tìm chỉ số điện/nước tháng hiện tại
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+    const currentMonthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    
+    const currentMonthConsumption = monthlyConsumption.find(c => c.monthKey === currentMonthKey) || {
+      totalElectricity: 0,
+      totalWater: 0
+    };
+
+    const actualContent = document.getElementById('dashboardActualContent');
+    if (!actualContent) return;
+
+    actualContent.innerHTML = `
       <!-- Grid chỉ số thống kê (Stat Cards) -->
-      <div class="dashboard-grid" id="statCardsGrid">
+      <div class="dashboard-grid mb-4" id="statCardsGrid">
         <!-- Được render động bởi JS -->
       </div>
 
@@ -87,21 +96,21 @@ export function renderDashboardPage(container) {
           </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
 
-  // 3. Render các thẻ thống kê cụ thể
-  renderStatCardsList(roomStats, tenantStats, financial, currentMonthConsumption);
+    // 3. Render các thẻ thống kê cụ thể
+    renderStatCardsList(roomStats, tenantStats, financial, currentMonthConsumption);
 
-  // 4. Render danh sách cảnh báo nhắc nhở
-  const alertsContainer = document.getElementById('dashboardAlertsContainer');
-  if (alertsContainer) {
-    renderAlertList(alertsContainer);
-  }
+    // 4. Render danh sách cảnh báo nhắc nhở
+    const alertsContainer = document.getElementById('dashboardAlertsContainer');
+    if (alertsContainer) {
+      renderAlertList(alertsContainer);
+    }
 
-  // 5. Khởi dựng các biểu đồ Chart.js
-  renderRevenueChart();
-  renderRoomStatusChart(roomStats);
+    // 5. Khởi dựng các biểu đồ Chart.js
+    renderRevenueChart();
+    renderRoomStatusChart(roomStats);
+  }, 500);
 }
 
 // ─── RENDER STAT CARDS ─────────────────────────────────────────

@@ -13,6 +13,7 @@ import {
   createInvoice,
   generateInvoiceForRoom,
   generateInvoicesForMonth,
+  getInvoiceByRoomAndMonth,
   updateDraftInvoice,
   finalizeInvoice,
   cancelInvoice,
@@ -33,6 +34,7 @@ import { openInvoiceDetail } from '../components/invoice-detail.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
 import { renderPagination } from '../components/pagination.js';
 import { renderEmptyState } from '../components/empty-state.js';
+import { renderInvoicesTableSkeleton, renderBatchInvoiceProgress, renderProgressBar } from '../components/loading-state.js';
 import { ROOM_STATUS_LABELS } from '../constants/statuses.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
@@ -291,59 +293,64 @@ function renderFinancialSummary() {
 function renderInvoicesList() {
   const tbody = document.getElementById('invoicesTableBody');
   const emptyEl = document.getElementById('invoicesEmpty');
+  const paginationContainer = document.getElementById('invoicesPaginationContainer');
   if (!tbody) return;
 
-  const filters = {
-    month: currentMonth || undefined,
-    year: currentYear || undefined,
-    roomId: currentRoomId || undefined
-  };
-
-  // Nếu lọc status khác "overdue" thì truyền cho service, riêng "overdue" ta tự lọc bên ngoài
-  if (currentStatus && currentStatus !== 'overdue') {
-    filters.status = currentStatus;
-  }
-
-  let list = filterInvoices(filters);
-
-  // Sắp xếp theo ngày tạo (createdAt) giảm dần (mới nhất lên trước)
-  list.sort((a, b) => {
-    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return timeB - timeA;
-  });
-
-  // Tìm theo mã hoặc tên phòng
-  if (currentKeyword) {
-    const kw = currentKeyword.toLowerCase();
-    list = list.filter(inv => {
-      const room = getRoomById(inv.roomId);
-      const roomName = room ? room.name.toLowerCase() : '';
-      return inv.id.toLowerCase().includes(kw) || roomName.includes(kw) || inv.roomId.toLowerCase().includes(kw);
-    });
-  }
-
-  if (currentStatus === 'overdue') {
-    list = list.filter(inv => (inv.status === 'unpaid' || inv.status === 'partial') && calculateDaysOverdue(inv.dueDate, new Date()) > 0);
-  }
-
-  const paginationContainer = document.getElementById('invoicesPaginationContainer');
-
-  if (list.length === 0) {
-    tbody.innerHTML = '';
-    if (emptyEl) {
-      const hasFilters = currentMonth || currentYear || currentRoomId || currentStatus || currentKeyword;
-      emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-invoices', {
-        actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionCreateInvoices',
-        actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '⚙️ Lập hóa đơn hàng loạt'
-      });
-      emptyEl.classList.remove('d-none');
-    }
-    if (paginationContainer) paginationContainer.innerHTML = '';
-    return;
-  }
-
+  // Render skeleton loading
+  tbody.innerHTML = `<tr><td colspan="7" class="p-0 border-0">${renderInvoicesTableSkeleton()}</td></tr>`;
+  if (paginationContainer) paginationContainer.innerHTML = '';
   emptyEl && emptyEl.classList.add('d-none');
+
+  setTimeout(() => {
+    const filters = {
+      month: currentMonth || undefined,
+      year: currentYear || undefined,
+      roomId: currentRoomId || undefined
+    };
+
+    // Nếu lọc status khác "overdue" thì truyền cho service, riêng "overdue" ta tự lọc bên ngoài
+    if (currentStatus && currentStatus !== 'overdue') {
+      filters.status = currentStatus;
+    }
+
+    let list = filterInvoices(filters);
+
+    // Sắp xếp theo ngày tạo (createdAt) giảm dần (mới nhất lên trước)
+    list.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+
+    // Tìm theo mã hoặc tên phòng
+    if (currentKeyword) {
+      const kw = currentKeyword.toLowerCase();
+      list = list.filter(inv => {
+        const room = getRoomById(inv.roomId);
+        const roomName = room ? room.name.toLowerCase() : '';
+        return inv.id.toLowerCase().includes(kw) || roomName.includes(kw) || inv.roomId.toLowerCase().includes(kw);
+      });
+    }
+
+    if (currentStatus === 'overdue') {
+      list = list.filter(inv => (inv.status === 'unpaid' || inv.status === 'partial') && calculateDaysOverdue(inv.dueDate, new Date()) > 0);
+    }
+
+    if (list.length === 0) {
+      tbody.innerHTML = '';
+      if (emptyEl) {
+        const hasFilters = currentMonth || currentYear || currentRoomId || currentStatus || currentKeyword;
+        emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-invoices', {
+          actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionCreateInvoices',
+          actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '⚙️ Lập hóa đơn hàng loạt'
+        });
+        emptyEl.classList.remove('d-none');
+      }
+      if (paginationContainer) paginationContainer.innerHTML = '';
+      return;
+    }
+
+    emptyEl && emptyEl.classList.add('d-none');
 
   // Xử lý phân trang
   const totalItems = list.length;
@@ -476,6 +483,7 @@ function renderInvoicesList() {
       </tr>
     `;
   }).join('');
+  }, 300);
 }
 
 function buildActionButtons(invoice) {
@@ -530,22 +538,78 @@ function bindEvents() {
         'Lập hóa đơn hàng loạt',
         `Hệ thống sẽ quét tất cả các phòng đang thuê chưa có hóa đơn trong tháng ${currentMonth}/${currentYear} và tự động tạo hóa đơn nháp (yêu cầu có chỉ số điện nước trước). Bạn có chắc chắn muốn tiến hành?`,
         () => {
-          const res = generateInvoicesForMonth(currentMonth, currentYear);
-          const successCount = res.created.length;
-          const failCount = res.failed.length;
+          const rooms = getRooms();
+          const rentedRooms = rooms.filter(room => {
+            const contract = getActiveContractByRoom(room.id);
+            const existing = getInvoiceByRoomAndMonth(room.id, currentMonth, currentYear);
+            return contract && !existing;
+          });
 
-          if (successCount > 0) {
-            showToast(`Lập thành công ${successCount} hóa đơn nháp!`, 'success');
-          }
-          if (failCount > 0) {
-            showToast(`Có ${failCount} phòng lỗi lập hóa đơn (Thiếu chỉ số điện nước hoặc đã lập).`, 'warning');
-          }
-          if (successCount === 0 && failCount === 0) {
+          const total = rentedRooms.length;
+          if (total === 0) {
             showToast('Không có phòng nào cần lập hóa đơn mới trong tháng này.', 'info');
+            return;
           }
 
-          renderFinancialSummary();
-          renderInvoicesList();
+          // Tạo overlay hiển thị tiến trình tạo hàng loạt
+          const overlay = document.createElement('div');
+          overlay.style.position = 'fixed';
+          overlay.style.top = '0';
+          overlay.style.left = '0';
+          overlay.style.width = '100vw';
+          overlay.style.height = '100vh';
+          overlay.style.zIndex = '9999';
+          overlay.style.background = 'rgba(0, 0, 0, 0.4)';
+          overlay.style.display = 'flex';
+          overlay.style.alignItems = 'center';
+          overlay.style.justifyContent = 'center';
+          overlay.innerHTML = renderBatchInvoiceProgress(0, total);
+          document.body.appendChild(overlay);
+
+          let current = 0;
+          const created = [];
+          const failed = [];
+
+          const processNextRoom = () => {
+            if (current < total) {
+              const room = rentedRooms[current];
+              try {
+                const inv = generateInvoiceForRoom(room.id, currentMonth, currentYear);
+                created.push(inv);
+              } catch (err) {
+                failed.push({ roomId: room.id, error: err.message });
+              }
+              current++;
+              
+              // Cập nhật giao diện tiến trình
+              const progressCard = overlay.querySelector('.batch-invoice-progress-card');
+              if (progressCard) {
+                progressCard.parentNode.innerHTML = renderBatchInvoiceProgress(current, total);
+              }
+
+              // Gọi xử lý phòng kế tiếp sau 150ms để quan sát được tiến trình
+              setTimeout(processNextRoom, 150);
+            } else {
+              // Hoàn tất, gỡ bỏ overlay
+              overlay.remove();
+
+              const successCount = created.length;
+              const failCount = failed.length;
+
+              if (successCount > 0) {
+                showToast(`Lập thành công ${successCount} hóa đơn nháp!`, 'success');
+              }
+              if (failCount > 0) {
+                showToast(`Có ${failCount} phòng lỗi lập hóa đơn (Thiếu chỉ số điện nước hoặc đã lập).`, 'warning');
+              }
+
+              renderFinancialSummary();
+              renderInvoicesList();
+            }
+          };
+
+          // Bắt đầu xử lý hàng loạt
+          processNextRoom();
         }
       );
     });

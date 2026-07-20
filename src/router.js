@@ -64,8 +64,20 @@ function renderNotFoundPage(container) {
  * Ví dụ: "#/rooms" -> "rooms", "" -> "dashboard"
  */
 function getCurrentPath() {
+  // 1️⃣ If URL contains a hash (hash mode) → dùng hash
   const hash = window.location.hash;
-  const path = hash.replace(/^#\/?/, '').replace(/\/$/, '').split('?')[0];
+  if (hash) {
+    const path = hash.replace(/^#\/?/, '').replace(/\/$/, '').split('?')[0];
+    return path || 'dashboard';
+  }
+
+  // 2️⃣ Nếu không có hash (history mode – dùng khi chạy tests hoặc dev server) → dựa vào pathname
+  const base = import.meta.env.BASE_URL || '/';
+  let pathname = window.location.pathname;
+  if (pathname.startsWith(base)) {
+    pathname = pathname.substring(base.length);
+  }
+  const path = pathname.replace(/^\//, '').replace(/\/$/, '').split('?')[0];
   return path || 'dashboard';
 }
 
@@ -137,8 +149,9 @@ export function navigateTo(path) {
  * - Render trang đầu tiên.
  */
 export function initRouter() {
-  // Lắng nghe sự kiện đổi route
+  // Lắng nghe sự kiện đổi route (hash hoặc pathname)
   window.addEventListener('hashchange', handleRouteChange);
+  window.addEventListener('popstate', handleRouteChange);
 
   // Delegate click: chặn tất cả <a data-link> để điều hướng bằng hash
   document.addEventListener('click', (e) => {
@@ -147,15 +160,15 @@ export function initRouter() {
       e.preventDefault();
       const href = link.getAttribute('href');
       if (href) {
-        // Xử lý cả href="#/page" và href="/page"
+        // Hỗ trợ cả href="#/page" và href="/page"
         const path = href.replace(/^#?\/?/, '');
         navigateTo(path);
       }
     }
   });
 
-  // Nếu không có hash thì chuyển về "#/dashboard"
-  if (!window.location.hash) {
+  // Nếu không có hash và pathname là root → tự chuyển tới dashboard (để đồng nhất UI)
+  if (!window.location.hash && (window.location.pathname === '/' || window.location.pathname === import.meta.env.BASE_URL)) {
     navigateTo('dashboard');
     return;
   }
@@ -163,4 +176,3 @@ export function initRouter() {
   // Render trang hiện tại
   handleRouteChange();
 }
-

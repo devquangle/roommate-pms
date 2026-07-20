@@ -4,20 +4,19 @@ import { test, expect } from '@playwright/test';
 test.describe('RoomMate Billing & Invoice Generation E2E', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Dọn LocalStorage trước mỗi test
+    // Dọn LocalStorage trước mỗi test để đảm bảo môi trường sạch & độc lập
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('should support full billing flow: record meter -> create invoice -> check totals & unpaid status', async ({ page }) => {
-    // 1. Tự chuẩn bị dữ liệu cố định trong LocalStorage để tính được tổng tiền mong đợi
-    // Tháng hiện tại: 7, Năm: 2026 (Theo mốc thời gian hệ thống 2026-07-18)
+  test('should support full billing flow: setup room, tenant & contract -> record meter -> create invoice -> verify line items, total & unpaid status', async ({ page }) => {
+    // Thiết lập dữ liệu đầu vào cố định cho tháng 7/2026
     const month = 7;
     const year = 2026;
 
+    // 1. Tạo phòng (P801: 3.000.000 VND), 2. Tạo người thuê (Lê Hoàng G), 3. Tạo & kích hoạt hợp đồng
     await page.goto('/');
     await page.evaluate(({ month, year }) => {
-      // Thiết lập phòng P801
       const room = {
         id: 'P801',
         name: 'Phòng 801',
@@ -29,7 +28,6 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
         maxTenants: 3
       };
       
-      // Thiết lập khách thuê
       const tenant = {
         id: 't-test-801',
         fullName: 'Lê Hoàng G',
@@ -37,7 +35,6 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
         status: 'active'
       };
 
-      // Thiết lập hợp đồng active trong tháng 7/2026
       const contract = {
         id: 'c-test-801',
         roomId: 'P801',
@@ -50,7 +47,6 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
         vehicles: 0
       };
 
-      // Thiết lập cấu hình dịch vụ chỉ gồm Điện (3.000) và Nước (15.000)
       const serviceConfigs = [
         {
           id: 'svc-dien',
@@ -80,15 +76,14 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
       localStorage.setItem('serviceConfigs', JSON.stringify(serviceConfigs));
     }, { month, year });
 
-    // 2. Đi ghi chỉ số điện nước tháng 7/2026
+    // 4. Ghi chỉ số điện nước tháng 7/2026
     await page.goto('/meters');
     await expect(page.locator('[data-testid="meters-page"]')).toBeVisible();
 
-    // Chọn đúng Tháng 7, Năm 2026
     await page.locator('[data-testid="filter-month"]').selectOption(String(month));
     await page.locator('[data-testid="filter-year"]').selectOption(String(year));
 
-    // Điền chỉ số mới: Điện mới 150 (cũ 0 -> tiêu thụ 50 kWh), Nước mới 12 (cũ 0 -> tiêu thụ 12 m3)
+    // Điền chỉ số: Điện mới 150 (tiêu thụ 150 kWh), Nước mới 12 (tiêu thụ 12 m3)
     const inputElec = page.locator('[data-testid="input-elec-new-P801"]');
     const inputWater = page.locator('[data-testid="input-water-new-P801"]');
     
@@ -96,13 +91,11 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
     await inputElec.fill('150');
     await inputWater.fill('12');
 
-    // Lưu lại chỉ số
+    // Lưu lại chỉ số điện nước
     await page.locator('[data-testid="btn-save-all"]').click();
-
-    // Chờ biểu tượng Đã lưu (bi-check-lg) của phòng P801 hiển thị
     await expect(page.locator('[data-testid="meter-row-P801"] .cell-save-status .bi-check-lg')).toBeVisible();
 
-    // 3. Tạo hóa đơn
+    // 5. Tạo hóa đơn cho phòng P801
     await page.goto('/invoices');
     await expect(page.locator('[data-testid="invoices-page"]')).toBeVisible();
 
@@ -113,20 +106,20 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
     await page.locator('#icm-roomId + .dropdown button.dropdown-toggle').click();
     await page.locator('#icm-roomId + .dropdown button.dropdown-item[data-value="P801"]').click();
 
-    // Chọn tháng 7 và năm 2026
     await page.locator('select#icm-month').selectOption(String(month));
     await page.locator('input#icm-year').fill(String(year));
 
-    // Kiểm tra từng khoản phí chính trong bảng của form hóa đơn trước khi lưu:
-    // Tiền phòng: 3.000.000 VND
-    // Tiền điện: 150 kWh * 3000 = 450.000 VND (do điện mới nhập 150, điện cũ 0 -> tiêu thụ 150)
-    // Tiền nước: 12 m3 * 15000 = 180.000 VND (do nước mới nhập 12, nước cũ 0 -> tiêu thụ 12)
-    // Tổng cộng: 3.000.000 + 450.000 + 180.000 = 3.630.000 VND
+    // Kiểm tra từng khoản phí chính trong hóa đơn:
+    // - Tiền thuê phòng: 3.000.000 VNĐ
+    // - Tiền điện: 150 kWh * 3.000 VNĐ = 450.000 VNĐ
+    // - Tiền nước: 12 m3 * 15.000 VNĐ = 180.000 VNĐ
     const formBody = page.locator('#icm-body');
     await expect(page.locator('.icm-item-name').nth(0)).toHaveValue('Tiền thuê phòng');
     await expect(formBody).toContainText('3.000.000');
+
     await expect(page.locator('.icm-item-name').nth(1)).toHaveValue('Điện tiêu thụ');
     await expect(formBody).toContainText('450.000');
+
     await expect(page.locator('.icm-item-name').nth(2)).toHaveValue('Nước tiêu thụ');
     await expect(formBody).toContainText('180.000');
 
@@ -134,15 +127,16 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
     await page.locator('#icm-btn-finalize').click();
     await expect(page.locator('#invoiceFormModal')).toBeHidden();
 
-    // 4. Kiểm tra hóa đơn ngoài danh sách
+    // 6. Kiểm tra tổng tiền & 7. Kiểm tra trạng thái chưa thanh toán trong danh sách
     const firstRow = page.locator('[data-testid="invoices-table-body"] tr').first();
     await expect(firstRow).toBeVisible();
 
-    // Kiểm tra tổng tiền
+    // Kiểm tra tổng tiền = 3.000.000 + 450.000 + 180.000 = 3.630.000 VNĐ
     await expect(firstRow).toContainText('Phòng 801');
     await expect(firstRow).toContainText('3.630.000');
 
-    // Kiểm tra trạng thái chưa thanh toán
+    // Kiểm tra trạng thái chưa thanh toán (Unpaid)
     await expect(firstRow).toContainText('Chưa thanh toán');
   });
 });
+

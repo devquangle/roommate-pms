@@ -9,21 +9,18 @@ test.describe('RoomMate Rooms Management E2E', () => {
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('should support rooms management flow: add -> view -> edit -> search -> filter -> delete', async ({ page }) => {
+  test('should execute room management E2E flow across all 10 scenarios', async ({ page }) => {
     // 1. Mở trang phòng
     await page.goto('/rooms');
-    
-    // Check Header Title
     await expect(page.locator('[data-testid="header-title"]')).toHaveText('Quản lý phòng');
-    
-    // Đảm bảo ở chế độ xem bảng
+
+    // Chuyển sang chế độ xem bảng để dễ kiểm tra các dòng phòng
     await page.locator('[data-testid="view-table"]').click();
 
-    // 2. Thêm phòng mới
+    // 2. Thêm phòng mới (Phòng 999 - P999)
     await page.locator('[data-testid="btn-add-room"]').click();
     await expect(page.locator('[data-testid="room-form-modal"]')).toBeVisible();
 
-    // Điền thông tin phòng P999
     await page.locator('[data-testid="input-room-code"]').fill('P999');
     await page.locator('[data-testid="input-room-name"]').fill('Phòng 999');
     await page.locator('[data-testid="input-room-floor"]').fill('Tầng 9');
@@ -33,8 +30,7 @@ test.describe('RoomMate Rooms Management E2E', () => {
     await page.locator('[data-testid="input-room-max-tenants"]').fill('4');
     await page.locator('[data-testid="select-room-status"]').selectOption('available');
     await page.locator('[data-testid="input-room-desc"]').fill('Mô tả phòng 999');
-    
-    // Lưu phòng
+
     await page.locator('[data-testid="btn-room-save"]').click();
     await expect(page.locator('[data-testid="room-form-modal"]')).toBeHidden();
 
@@ -43,7 +39,7 @@ test.describe('RoomMate Rooms Management E2E', () => {
     await expect(page.locator('[data-testid="room-row-P999"]')).toContainText('Phòng 999');
     await expect(page.locator('[data-testid="room-row-P999"]')).toContainText('3.000.000');
 
-    // Tạo thêm phòng P888 (ở trạng thái bảo trì) để kiểm thử tìm kiếm & bộ lọc độc lập
+    // Thêm phòng thứ 2 (P888 - Bảo trì) để kiểm tra tìm kiếm và lọc độc lập
     await page.locator('[data-testid="btn-add-room"]').click();
     await page.locator('[data-testid="input-room-code"]').fill('P888');
     await page.locator('[data-testid="input-room-name"]').fill('Phòng 888');
@@ -63,42 +59,36 @@ test.describe('RoomMate Rooms Management E2E', () => {
     await expect(page.locator('[data-testid="room-row-P999"]')).toBeVisible();
     await expect(page.locator('[data-testid="room-row-P888"]')).toBeVisible();
 
-    // 6. Sửa giá phòng P999
+    // 6. Sửa giá phòng (Sửa giá P999 từ 3.000.000 thành 3.500.000)
     await page.locator('[data-testid="btn-edit-room-P999"]').click();
     await expect(page.locator('[data-testid="room-form-modal"]')).toBeVisible();
     await page.locator('[data-testid="input-room-price"]').fill('3500000');
     await page.locator('[data-testid="btn-room-save"]').click();
     await expect(page.locator('[data-testid="room-form-modal"]')).toBeHidden();
 
-    // Kiểm tra giá tiền đã cập nhật
+    // Xác nhận giá phòng đã được cập nhật
     await expect(page.locator('[data-testid="room-row-P999"]')).toContainText('3.500.000');
 
-    // 7. Tìm kiếm phòng: Nhập '999'
+    // 7. Tìm kiếm phòng (Nhập từ khóa '999')
     await page.locator('[data-testid="input-search-room"]').fill('999');
-    
-    // Không dùng waitForTimeout bằng cách mong đợi phòng P888 biến mất khỏi DOM/Bảng hiển thị
     await expect(page.locator('[data-testid="room-row-P888"]')).toBeHidden();
     await expect(page.locator('[data-testid="room-row-P999"]')).toBeVisible();
 
-    // Xóa ô tìm kiếm để hiển thị lại đầy đủ
+    // Xóa từ khóa tìm kiếm
     await page.locator('[data-testid="input-search-room"]').fill('');
     await expect(page.locator('[data-testid="room-row-P888"]')).toBeVisible();
 
-    // 8. Lọc theo trạng thái: Lọc 'Bảo trì' (maintenance)
+    // 8. Lọc theo trạng thái (Lọc trạng thái 'maintenance')
     await page.locator('[data-testid="filter-status"]').selectOption('maintenance');
-    
-    // Phòng P999 (available) sẽ bị ẩn đi, phòng P888 (maintenance) vẫn hiển thị
     await expect(page.locator('[data-testid="room-row-P999"]')).toBeHidden();
     await expect(page.locator('[data-testid="room-row-P888"]')).toBeVisible();
 
-    // Reset bộ lọc về 'Tất cả trạng thái'
+    // Reset bộ lọc về tất cả
     await page.locator('[data-testid="filter-status"]').selectOption('');
     await expect(page.locator('[data-testid="room-row-P999"]')).toBeVisible();
 
     // 9. Xóa phòng P999
     await page.locator('[data-testid="btn-delete-room-P999"]').click();
-    
-    // Chờ hộp thoại xác nhận xuất hiện và Click Xác nhận
     await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
     await page.locator('[data-testid="btn-confirm-ok"]').click();
     await expect(page.locator('[data-testid="confirm-modal"]')).toBeHidden();
@@ -107,3 +97,4 @@ test.describe('RoomMate Rooms Management E2E', () => {
     await expect(page.locator('[data-testid="room-row-P999"]')).toBeHidden();
   });
 });
+

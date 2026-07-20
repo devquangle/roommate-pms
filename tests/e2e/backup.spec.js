@@ -6,13 +6,13 @@ import path from 'path';
 test.describe('RoomMate Backup, Import & Export E2E', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Dọn LocalStorage trước mỗi test
+    // Dọn LocalStorage trước mỗi test để đảm bảo độc lập
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('should support import/export lifecycle: export -> delete -> import merge -> error state -> overwrite cancel', async ({ page }) => {
-    // 1. Tạo một số dữ liệu ban đầu
+  test('should support import/export lifecycle across all 10 scenarios', async ({ page }) => {
+    // 1. Tạo một số dữ liệu (Khởi tạo phòng P905 trong LocalStorage)
     await page.goto('/');
     await page.evaluate(() => {
       const room = {
@@ -39,6 +39,7 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
 
     const downloadPath = path.resolve('tests/e2e/test_backup.json');
     await download.saveAs(downloadPath);
+    expect(fs.existsSync(downloadPath)).toBe(true);
 
     // 4. Xóa dữ liệu (Clear LocalStorage)
     await page.evaluate(() => localStorage.clear());
@@ -57,30 +58,28 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
     ]);
     await fileChooser.setFiles(downloadPath);
 
-    // Kiểm tra dữ liệu
+    // Bấm kiểm tra dữ liệu
     await page.locator('#btnCheckData').click();
     const fileInfo = page.locator('#importFileInfo');
     await expect(fileInfo).toContainText('✅ File dữ liệu hợp lệ');
 
-    // Đánh dấu biến trên window để phát hiện reload
+    // Đánh dấu biến trên window để phát hiện reload tự động
     await page.evaluate(() => { window.__pendingReload = true; });
 
-    // Bắt đầu Import
+    // Thực hiện Import
     await page.locator('#btnImportSubmit').click();
-
-    // Chờ cho thông báo toast thành công xuất hiện (đảm bảo importData đã chạy xong)
     await expect(page.locator('.toast-container')).toContainText('thành công');
 
-    // Chờ trang tự động reload xong (biến __pendingReload biến mất)
+    // Chờ trang tự động reload xong
     await page.waitForFunction(() => window.__pendingReload === undefined, { timeout: 5000 });
 
-    // 6. Kiểm tra dữ liệu được khôi phục
+    // 6. Kiểm tra dữ liệu được khôi phục (Phòng P905 xuất hiện trở lại)
     await page.goto('/rooms');
     await page.locator('[data-testid="view-table"]').click();
     await page.locator('[data-testid="input-search-room"]').fill('905');
     await expect(page.locator('[data-testid="room-row-P905"]')).toBeVisible();
 
-    // 7. Import file sai định dạng
+    // 7. Import file sai định dạng (Tạo file JSON chứa cấu trúc không hợp lệ)
     const tempInvalidPath = path.resolve('tests/e2e/temp_invalid_backup.json');
     fs.writeFileSync(tempInvalidPath, '{"rooms": "invalid_structure"}');
 
@@ -91,18 +90,18 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
     ]);
     await fileChooser2.setFiles(tempInvalidPath);
 
-    // Bấm kiểm tra
+    // Bấm kiểm tra file
     await page.locator('#btnCheckData').click();
 
-    // 8. Kiểm tra hiển thị lỗi
+    // 8. Kiểm tra hiển thị lỗi (Error state giao diện xuất hiện)
     await expect(page.locator('[data-testid="error-state-invalid-import"]')).toBeVisible();
 
-    // Dọn dẹp file tạm
+    // Dọn dẹp file sai định dạng
     if (fs.existsSync(tempInvalidPath)) {
       fs.unlinkSync(tempInvalidPath);
     }
 
-    // Nút "Chọn file khác" xuất hiện trong Error State
+    // Nút "Chọn file khác" xuất hiện trong Error State để reset
     await page.locator('#btnErrorActionResetImport').click();
 
     // 9. Hủy thao tác ghi đè
@@ -113,19 +112,18 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
     ]);
     await fileChooser3.setFiles(downloadPath);
 
-    // Bấm kiểm tra
     await page.locator('#btnCheckData').click();
     await expect(fileInfo).toContainText('✅ File dữ liệu hợp lệ');
 
-    // Chọn phương thức ghi đè
+    // Chọn phương thức ghi đè (Overwrite)
     await page.locator('#modeOverwrite').check();
     await page.locator('#btnImportSubmit').click();
 
-    // Kiểm tra hiển thị danger confirm modal
+    // Kiểm tra hiển thị Modal cảnh báo nguy hiểm (danger confirm modal)
     const dangerModal = page.locator('[data-testid="danger-confirm-modal"]');
     await expect(dangerModal).toBeVisible();
 
-    // Hủy bỏ thao tác
+    // Hủy bỏ thao tác ghi đè
     await dangerModal.locator('button:has-text("Hủy bỏ")').click();
     await expect(dangerModal).toBeHidden();
 
@@ -141,3 +139,4 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
     }
   });
 });
+

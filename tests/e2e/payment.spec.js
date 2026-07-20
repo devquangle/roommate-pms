@@ -4,14 +4,13 @@ import { test, expect } from '@playwright/test';
 test.describe('RoomMate Payments & Dashboard Updates E2E', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Dọn LocalStorage trước mỗi test
+    // Dọn LocalStorage trước mỗi test để đảm bảo môi trường sạch & độc lập
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('should support payment flow and update dashboard stats correctly', async ({ page }) => {
-    // 1. Chuẩn bị một hóa đơn chưa thanh toán (Dùng dữ liệu test riêng biệt)
-    // Thiết lập phòng P901, khách thuê Nguyễn Văn H, hợp đồng active và hóa đơn chưa thanh toán 2M VND
+  test('should support full payment flow: unpaid invoice -> partial payment -> verify debt -> full payment -> check paid status -> check dashboard stats & verify after reload', async ({ page }) => {
+    // 1. Chuẩn bị một hóa đơn chưa thanh toán (Hóa đơn 2.000.000 VNĐ - Dữ liệu test riêng biệt)
     await page.goto('/');
     await page.evaluate(() => {
       const room = {
@@ -65,7 +64,7 @@ test.describe('RoomMate Payments & Dashboard Updates E2E', () => {
       localStorage.setItem('invoices', JSON.stringify([invoice]));
     });
 
-    // Đi tới trang danh sách hóa đơn để xác thực trạng thái ban đầu của hóa đơn
+    // Xác nhận hóa đơn chưa thanh toán ban đầu hiển thị đúng
     await page.goto('/invoices');
     await expect(page.locator('[data-testid="invoices-page"]')).toBeVisible();
     
@@ -74,44 +73,38 @@ test.describe('RoomMate Payments & Dashboard Updates E2E', () => {
     await expect(page.locator(rowSelector)).toContainText('Chưa thanh toán');
     await expect(page.locator(rowSelector)).toContainText('2.000.000');
 
-    // 2. Thanh toán một phần: Trả 1.200.000 VND
+    // 2. Thanh toán một phần (Trả 1.200.000 VNĐ)
     await page.goto('/payments');
     await expect(page.locator('[data-testid="payments-page"]')).toBeVisible();
 
     await page.locator('[data-testid="btn-add-payment"]').click();
     await expect(page.locator('[data-testid="payment-form-modal"]')).toBeVisible();
 
-    // Chọn hóa đơn cần thanh toán
     await page.locator('[data-testid="select-invoice"]').selectOption('i-test-pay-1');
-
-    // Điền số tiền thanh toán một phần
     await page.locator('[data-testid="input-amount"]').fill('1200000');
     await page.locator('[data-testid="select-method"]').selectOption('transfer');
 
-    // Bấm lưu giao dịch
     await page.locator('[data-testid="btn-payment-save"]').click();
     await expect(page.locator('[data-testid="payment-form-modal"]')).toBeHidden();
 
-    // 3. Kiểm tra còn nợ: nợ còn lại là 800.000 VND và trạng thái là 'Thanh toán một phần'
+    // 3. Kiểm tra còn nợ (Còn nợ 800.000 VNĐ, trạng thái 'Thanh toán một phần')
     await page.goto('/invoices');
     await expect(page.locator(rowSelector)).toContainText('Thanh toán một phần');
     await expect(page.locator(rowSelector)).toContainText('800.000');
 
-    // 4. Thanh toán phần còn lại: Trả nốt 800.000 VND
+    // 4. Thanh toán phần còn lại (Trả nốt 800.000 VNĐ)
     await page.goto('/payments');
     await page.locator('[data-testid="btn-add-payment"]').click();
     await expect(page.locator('[data-testid="payment-form-modal"]')).toBeVisible();
 
     await page.locator('[data-testid="select-invoice"]').selectOption('i-test-pay-1');
-    // Xác nhận số tiền nợ còn lại được tự động gợi ý chính xác
     await expect(page.locator('[data-testid="input-amount"]')).toHaveValue('800000');
     await page.locator('[data-testid="select-method"]').selectOption('cash');
     
-    // Nhấn Lưu thanh toán
     await page.locator('[data-testid="btn-payment-save"]').click();
     await expect(page.locator('[data-testid="payment-form-modal"]')).toBeHidden();
 
-    // 5. Kiểm tra hóa đơn đã thanh toán: Đã trả đủ 2.000.000, nợ còn lại là 0
+    // 5. Kiểm tra hóa đơn đã thanh toán (Đã trả đủ 2.000.000 VNĐ, còn nợ 0, trạng thái 'Đã thanh toán')
     await page.goto('/invoices');
     await expect(page.locator(rowSelector)).toContainText('Đã thanh toán');
     await expect(page.locator(rowSelector)).toContainText('0');
@@ -120,13 +113,16 @@ test.describe('RoomMate Payments & Dashboard Updates E2E', () => {
     await page.goto('/dashboard');
     await expect(page.locator('[data-testid="dashboard-page"]')).toBeVisible();
 
-    // 7. Kiểm tra doanh thu và 8. Kiểm tra công nợ giảm trên Dashboard
+    // 7. Kiểm tra doanh thu / tiền thực thu được cập nhật (2.000.000 VNĐ)
     await expect(page.locator('[data-testid="stat-monthly-revenue-value"]')).toContainText('2.000.000');
+
+    // 8. Kiểm tra công nợ giảm về 0
     await expect(page.locator('[data-testid="stat-total-debt-value"]')).toContainText('0');
 
-    // Kiểm tra sau khi reload (Check cả giao diện và dữ liệu sau khi reload)
+    // Kiểm tra cả giao diện và dữ liệu sau khi reload trang Dashboard
     await page.reload();
     await expect(page.locator('[data-testid="stat-monthly-revenue-value"]')).toContainText('2.000.000');
     await expect(page.locator('[data-testid="stat-total-debt-value"]')).toContainText('0');
   });
 });
+

@@ -68,7 +68,7 @@ export function openTenantForm({ tenant = null, onSave }) {
                     </div>
                     <div class="col-md-6">
                       <label for="tenantEmail" class="form-label small fw-semibold">Email</label>
-                      <input type="email" class="form-control form-control-sm" id="tenantEmail"
+                      <input type="email" class="form-control form-control-sm" id="tenantEmail" data-testid="input-tenant-email"
                         placeholder="nguyenvana@gmail.com" value="${isEdit ? (tenant.email || '') : ''}" />
                     </div>
                     <div class="col-md-6">

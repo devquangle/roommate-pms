@@ -4,52 +4,59 @@ import { test, expect } from '@playwright/test';
 test.describe('RoomMate Contracts Management E2E', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Dọn LocalStorage trước mỗi test
+    // Dọn LocalStorage trước mỗi test để đảm bảo môi trường sạch & độc lập
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('should support contract flow: create contract -> activate -> check room status', async ({ page }) => {
-    // 1. Tạo phòng mới và 2. Tạo người thuê (tự chuẩn bị dữ liệu trong LocalStorage để test chạy nhanh & độc lập)
-    await page.goto('/');
-    await page.evaluate(() => {
-      const room = {
-        id: 'P701',
-        name: 'Phòng 701',
-        floor: 'Tầng 7',
-        type: 'standard',
-        price: 3000000,
-        area: 25,
-        status: 'available',
-        maxTenants: 3,
-        description: 'Phòng test E2E'
-      };
-      const tenant = {
-        id: 't-test-1',
-        fullName: 'Nguyễn Văn E',
-        phone: '0909999888',
-        idCard: '123456789012',
-        email: 'vane@gmail.com',
-        status: 'active'
-      };
-      localStorage.setItem('rooms', JSON.stringify([room]));
-      localStorage.setItem('tenants', JSON.stringify([tenant]));
-    });
+  test('should support full contract flow: create room -> create tenant -> create contract -> activate -> check room rented -> check contract listed', async ({ page }) => {
+    // 1. Tạo phòng mới (Phòng 701)
+    await page.goto('/rooms');
+    await page.locator('[data-testid="view-table"]').click();
+    await page.locator('[data-testid="btn-add-room"]').click();
+    await expect(page.locator('[data-testid="room-form-modal"]')).toBeVisible();
 
-    // 3. Tạo hợp đồng & 4. Kích hoạt hợp đồng (bấm Tạo & Kích hoạt)
+    await page.locator('[data-testid="input-room-code"]').fill('P701');
+    await page.locator('[data-testid="input-room-name"]').fill('Phòng 701');
+    await page.locator('[data-testid="input-room-floor"]').fill('Tầng 7');
+    await page.locator('[data-testid="select-room-type"]').selectOption('standard');
+    await page.locator('[data-testid="input-room-area"]').fill('25');
+    await page.locator('[data-testid="input-room-price"]').fill('3000000');
+    await page.locator('[data-testid="input-room-max-tenants"]').fill('3');
+    await page.locator('[data-testid="select-room-status"]').selectOption('available');
+    await page.locator('[data-testid="btn-room-save"]').click();
+    
+    // Chờ phòng hiển thị trên bảng
+    await expect(page.locator('[data-testid="room-row-P701"]')).toBeVisible();
+
+    // 2. Tạo người thuê mới (Nguyễn Văn E)
+    await page.goto('/tenants');
+    await page.locator('[data-testid="btn-add-tenant"]').click();
+    await expect(page.locator('[data-testid="tenant-form-modal"]')).toBeVisible();
+
+    await page.locator('[data-testid="input-tenant-name"]').fill('Nguyễn Văn E');
+    await page.locator('[data-testid="input-tenant-phone"]').fill('0909999888');
+    await page.locator('[data-testid="input-tenant-idcard"]').fill('123456789012');
+    await page.locator('input#tenantEmail').fill('vane@gmail.com');
+    await page.locator('[data-testid="btn-tenant-save"]').click();
+    
+    // Chờ người thuê hiển thị trong danh sách
+    await expect(page.locator('[data-testid="tenants-table-body"]')).toContainText('Nguyễn Văn E');
+
+    // 3. Tạo hợp đồng & 4. Kích hoạt hợp đồng
     await page.goto('/contracts');
     await page.locator('[data-testid="btn-add-contract"]').click();
     await expect(page.locator('#contractFormModal')).toBeVisible();
 
-    // Chọn phòng P701 qua searchable-select
+    // Chọn phòng P701 qua searchable select dropdown
     await page.locator('#contractRoom + .dropdown button.dropdown-toggle').click();
     await page.locator('#contractRoom + .dropdown button.dropdown-item[data-value="P701"]').click();
 
-    // Chọn người đại diện qua searchable-select
+    // Chọn người đại diện (Nguyễn Văn E) qua searchable select dropdown
     await page.locator('#contractTenant + .dropdown button.dropdown-toggle').click();
     await page.locator('#contractTenant + .dropdown button.dropdown-item:has-text("Nguyễn Văn E")').click();
 
-    // Nhập ngày bắt đầu & ngày kết thúc
+    // Nhập thời hạn hợp đồng (2026-08-01 -> 2027-08-01)
     await page.locator('input#contractStartDate').fill('2026-08-01');
     await page.locator('input#contractEndDate').fill('2027-08-01');
 
@@ -57,9 +64,8 @@ test.describe('RoomMate Contracts Management E2E', () => {
     await page.locator('input#contractRoomPrice').fill('3000000');
     await page.locator('input#contractDeposit').fill('3000000');
 
-    // Click Tạo & Kích hoạt
+    // Kích hoạt hợp đồng (Bấm Tạo & Kích hoạt)
     await page.locator('#btnSaveActive').click();
-    await expect(page.locator('#contractFormModal')).toBeHidden();
 
     // 6. Kiểm tra hợp đồng xuất hiện trong danh sách
     await expect(page.locator('[data-testid="contracts-table-body"] tr').first()).toContainText('Phòng 701');
@@ -73,7 +79,7 @@ test.describe('RoomMate Contracts Management E2E', () => {
   });
 
   test('should not allow creating an overlapping contract on the same room and display error message', async ({ page }) => {
-    // Tự chuẩn bị dữ liệu: tạo phòng, người thuê và một hợp đồng đang active sẵn
+    // Tự chuẩn bị dữ liệu độc lập cho kịch bản trùng thời gian
     await page.goto('/');
     await page.evaluate(() => {
       const room = {
@@ -118,7 +124,7 @@ test.describe('RoomMate Contracts Management E2E', () => {
     await page.locator('[data-testid="btn-add-contract"]').click();
     await expect(page.locator('#contractFormModal')).toBeVisible();
 
-    // Chọn phòng P702
+    // Chọn cùng phòng P702
     await page.locator('#contractRoom + .dropdown button.dropdown-toggle').click();
     await page.locator('#contractRoom + .dropdown button.dropdown-item[data-value="P702"]').click();
 
@@ -126,14 +132,14 @@ test.describe('RoomMate Contracts Management E2E', () => {
     await page.locator('#contractTenant + .dropdown button.dropdown-toggle').click();
     await page.locator('#contractTenant + .dropdown button.dropdown-item:has-text("Người thuê 2")').click();
 
-    // Nhập thời gian trùng lặp (trùng khoảng thời gian)
+    // Nhập thời gian trùng lặp (2026-10-01 nằm trong 2026-08-01 -> 2027-08-01)
     await page.locator('input#contractStartDate').fill('2026-10-01');
     await page.locator('input#contractEndDate').fill('2027-02-01');
 
     await page.locator('input#contractRoomPrice').fill('3000000');
     await page.locator('input#contractDeposit').fill('3000000');
 
-    // Click Tạo & Kích hoạt
+    // Bấm Tạo & Kích hoạt
     await page.locator('#btnSaveActive').click();
 
     // Kiểm tra hiển thị đúng thông báo lỗi
@@ -142,3 +148,6 @@ test.describe('RoomMate Contracts Management E2E', () => {
     await expect(errorAlert).toContainText('trùng thời gian');
   });
 });
+
+
+

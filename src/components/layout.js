@@ -2,7 +2,7 @@
 
 /**
  * Render khung giao diện chính: sidebar, topbar, vùng content.
- * Menu sử dụng href="/page" + data-link để tích hợp với History API router.
+ * Menu sử dụng href="#/page" + data-link để tích hợp với hash router.
  */
 export function renderLayout(rootElement) {
   rootElement.innerHTML = `
@@ -12,57 +12,57 @@ export function renderLayout(rootElement) {
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar" data-testid="sidebar">
       <div class="sidebar-header d-flex align-items-center justify-content-between p-3 border-bottom border-secondary">
-        <a href="/dashboard" data-link class="text-white text-decoration-none d-flex align-items-center gap-2">
+        <a href="#/dashboard" data-link class="text-white text-decoration-none d-flex align-items-center gap-2">
           <i class="bi bi-house-door-fill fs-4 text-primary"></i>
           <h4 class="mb-0 fw-bold sidebar-title">RoomMate</h4>
         </a>
       </div>
       <nav class="nav flex-column" id="sidebar-menu" data-testid="sidebar-menu">
-        <a class="nav-link d-flex align-items-center" href="/dashboard" data-link data-page="dashboard" data-testid="menu-dashboard">
+        <a class="nav-link d-flex align-items-center" href="#/dashboard" data-link data-page="dashboard" data-testid="menu-dashboard">
           <i class="bi bi-speedometer2 me-2"></i>
           <span class="menu-text">Tổng quan</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/rooms" data-link data-page="rooms" data-testid="menu-rooms">
+        <a class="nav-link d-flex align-items-center" href="#/rooms" data-link data-page="rooms" data-testid="menu-rooms">
           <i class="bi bi-door-open me-2"></i>
           <span class="menu-text">Phòng trọ</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/tenants" data-link data-page="tenants" data-testid="menu-tenants">
+        <a class="nav-link d-flex align-items-center" href="#/tenants" data-link data-page="tenants" data-testid="menu-tenants">
           <i class="bi bi-people me-2"></i>
           <span class="menu-text">Người thuê</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/contracts" data-link data-page="contracts" data-testid="menu-contracts">
+        <a class="nav-link d-flex align-items-center" href="#/contracts" data-link data-page="contracts" data-testid="menu-contracts">
           <i class="bi bi-file-earmark-text me-2"></i>
           <span class="menu-text">Hợp đồng</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/meters" data-link data-page="meters" data-testid="menu-meters">
+        <a class="nav-link d-flex align-items-center" href="#/meters" data-link data-page="meters" data-testid="menu-meters">
           <i class="bi bi-lightning-charge me-2"></i>
           <span class="menu-text">Điện nước</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/meters-history" data-link data-page="meters-history" data-testid="menu-meters-history">
+        <a class="nav-link d-flex align-items-center" href="#/meters-history" data-link data-page="meters-history" data-testid="menu-meters-history">
           <i class="bi bi-clock-history me-2"></i>
           <span class="menu-text">Lịch sử điện nước</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/services" data-link data-page="services" data-testid="menu-services">
+        <a class="nav-link d-flex align-items-center" href="#/services" data-link data-page="services" data-testid="menu-services">
           <i class="bi bi-gear-wide-connected me-2"></i>
           <span class="menu-text">Dịch vụ</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/invoices" data-link data-page="invoices" data-testid="menu-invoices">
+        <a class="nav-link d-flex align-items-center" href="#/invoices" data-link data-page="invoices" data-testid="menu-invoices">
           <i class="bi bi-receipt me-2"></i>
           <span class="menu-text">Hóa đơn</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/payments" data-link data-page="payments" data-testid="menu-payments">
+        <a class="nav-link d-flex align-items-center" href="#/payments" data-link data-page="payments" data-testid="menu-payments">
           <i class="bi bi-cash-stack me-2"></i>
           <span class="menu-text">Thanh toán</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/debts" data-link data-page="debts" data-testid="menu-debts">
+        <a class="nav-link d-flex align-items-center" href="#/debts" data-link data-page="debts" data-testid="menu-debts">
           <i class="bi bi-exclamation-triangle me-2"></i>
           <span class="menu-text">Công nợ</span>
         </a>
-        <a class="nav-link d-flex align-items-center" href="/reports" data-link data-page="reports" data-testid="menu-reports">
+        <a class="nav-link d-flex align-items-center" href="#/reports" data-link data-page="reports" data-testid="menu-reports">
           <i class="bi bi-bar-chart-line me-2"></i>
           <span class="menu-text">Báo cáo</span>
         </a>
-        <a class="nav-link d-flex align-items-center border-top border-secondary mt-2 pt-2" href="/backup" data-link data-page="backup" data-testid="menu-backup">
+        <a class="nav-link d-flex align-items-center border-top border-secondary mt-2 pt-2" href="#/backup" data-link data-page="backup" data-testid="menu-backup">
           <i class="bi bi-database-down me-2"></i>
           <span class="menu-text">Sao lưu dữ liệu</span>
         </a>
@@ -111,7 +111,7 @@ export function renderLayout(rootElement) {
                 <div class="fw-bold text-dark">Quản lý trọ</div>
                 <div class="text-muted small">admin@roommate.com</div>
               </li>
-              <li><a class="dropdown-item py-2 small" href="/backup" data-link><i class="bi bi-database-down me-2 text-muted"></i>Sao lưu dữ liệu</a></li>
+              <li><a class="dropdown-item py-2 small" href="#/backup" data-link><i class="bi bi-database-down me-2 text-muted"></i>Sao lưu dữ liệu</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item py-2 small text-danger" href="#" id="btn-logout"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
             </ul>
@@ -167,7 +167,7 @@ export function renderLayout(rootElement) {
         const query = topbarSearch.value.trim();
         if (query) {
           // Điều hướng đến trang hợp đồng hoặc phòng trọ và điền query vào ô search của trang đó
-          window.history.pushState(null, '', `/contracts?search=${encodeURIComponent(query)}`);
+          window.location.hash = `/contracts?search=${encodeURIComponent(query)}`;
           // Gọi popstate event thủ công để Router nhận diện chuyển trang
           window.dispatchEvent(new Event('popstate'));
         }

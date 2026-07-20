@@ -5,8 +5,9 @@ const repoName = process.env.GITHUB_REPOSITORY
   ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/`
   : '/roommate-pms/';
 
-export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? repoName : '/',
+export default defineConfig(({ command }) => ({
+  // command === 'build' khi chạy `vite build`, 'serve' khi chạy `vite` (dev)
+  base: command === 'build' ? repoName : '/',
   server: {
     port: 5173,
     open: false
@@ -14,6 +15,6 @@ export default defineConfig({
   build: {
     outDir: 'dist'
   }
-});
+}));
 
 

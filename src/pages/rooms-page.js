@@ -697,10 +697,10 @@ function handleView(id) {
               <button class="btn btn-outline-primary btn-sm" onclick="document.dispatchEvent(new CustomEvent('editRoom', {detail: '${room.id}'})); bootstrap.Modal.getInstance(document.getElementById('roomDetailModal')).hide();">
                 <i class="bi bi-pencil"></i> Sửa phòng
               </button>
-              <a href="/invoices" data-link class="btn btn-outline-success btn-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('roomDetailModal')).hide();">
+              <a href="#/invoices" data-link class="btn btn-outline-success btn-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('roomDetailModal')).hide();">
                 <i class="bi bi-receipt"></i> Lập hóa đơn
               </a>
-              <a href="/meters" data-link class="btn btn-outline-info btn-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('roomDetailModal')).hide();">
+              <a href="#/meters" data-link class="btn btn-outline-info btn-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('roomDetailModal')).hide();">
                 <i class="bi bi-lightning-charge"></i> Ghi điện nước
               </a>
             </div>

@@ -1,9 +1,9 @@
 // src/router.js
 
 /**
- * Router sử dụng History API (pushState / popstate).
- * URL sạch: /dashboard, /rooms, /tenants...
- * Không sử dụng hash (#).
+ * Router sử dụng Hash (#) để điều hướng.
+ * URL dạng: /#/dashboard, /#/rooms, /#/tenants...
+ * Hoạt động trên cả local dev và GitHub Pages.
  */
 
 // Import tất cả page modules
@@ -60,26 +60,12 @@ function renderNotFoundPage(container) {
 }
 
 /**
- * Lấy path hiện tại từ location.pathname.
- * Ví dụ: "/rooms" -> "rooms", "/" -> "dashboard"
+ * Lấy path hiện tại từ location.hash.
+ * Ví dụ: "#/rooms" -> "rooms", "" -> "dashboard"
  */
 function getCurrentPath() {
-  // 1. Kiểm tra nếu dùng hash
   const hash = window.location.hash;
-  if (hash) {
-    const path = hash.replace(/^#\/?/, '').replace(/\/$/, '');
-    return path || 'dashboard';
-  }
-
-  // 2. Nếu dùng History API (pathname)
-  const base = import.meta.env.BASE_URL || '/';
-  let pathname = window.location.pathname;
-  
-  if (pathname.startsWith(base)) {
-    pathname = pathname.substring(base.length);
-  }
-  
-  const path = pathname.replace(/^\//, '').replace(/\/$/, '');
+  const path = hash.replace(/^#\/?/, '').replace(/\/$/, '').split('?')[0];
   return path || 'dashboard';
 }
 
@@ -136,59 +122,45 @@ function handleRouteChange() {
 }
 
 /**
- * Chuyển hướng bằng History API.
+ * Chuyển hướng bằng hash.
  * Có thể gọi từ bất kỳ module nào: navigateTo('rooms')
  */
 export function navigateTo(path) {
-  const isHash = !!window.location.hash || window.location.pathname.includes('index.html');
-  if (isHash) {
-    window.location.hash = `/${path}`;
-  } else {
-    const base = import.meta.env.BASE_URL || '/';
-    const cleanBase = base.endsWith('/') ? base : base + '/';
-    window.history.pushState(null, '', `${cleanBase}${path}`);
-    handleRouteChange();
-  }
+  window.location.hash = `/${path}`;
 }
 
 /**
  * Khởi tạo router:
- * - Lắng nghe popstate (nút back/forward của trình duyệt).
- * - Lắng nghe hashchange (cho chế độ hash router).
- * - Chặn click vào các link có thuộc tính [data-link] để dùng pushState/hash.
- * - Nếu đang ở "/" thì redirect về "/dashboard".
+ * - Lắng nghe hashchange (chế độ hash router).
+ * - Chặn click vào các link có thuộc tính [data-link] để dùng hash.
+ * - Nếu không có hash thì redirect về "#/dashboard".
  * - Render trang đầu tiên.
  */
 export function initRouter() {
-  // Lắng nghe các sự kiện đổi route
-  window.addEventListener('popstate', handleRouteChange);
+  // Lắng nghe sự kiện đổi route
   window.addEventListener('hashchange', handleRouteChange);
 
-  // Delegate click: chặn tất cả <a data-link> để điều hướng bằng pushState/hash
+  // Delegate click: chặn tất cả <a data-link> để điều hướng bằng hash
   document.addEventListener('click', (e) => {
     const link = e.target.closest('[data-link]');
     if (link) {
       e.preventDefault();
       const href = link.getAttribute('href');
       if (href) {
-        const path = href.replace(/^\//, '');
+        // Xử lý cả href="#/page" và href="/page"
+        const path = href.replace(/^#?\/?/, '');
         navigateTo(path);
       }
     }
   });
 
-  const base = import.meta.env.BASE_URL || '/';
-  const pathname = window.location.pathname;
-  const hash = window.location.hash;
-
-  // Nếu đang ở root thì chuyển về "/dashboard"
-  if (!hash) {
-    if (pathname === '/' || pathname === '' || pathname === base || pathname === base.replace(/\/$/, '')) {
-      navigateTo('dashboard');
-      return;
-    }
+  // Nếu không có hash thì chuyển về "#/dashboard"
+  if (!window.location.hash) {
+    navigateTo('dashboard');
+    return;
   }
 
   // Render trang hiện tại
   handleRouteChange();
 }
+

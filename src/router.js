@@ -138,7 +138,10 @@ function handleRouteChange() {
  * Có thể gọi từ bất kỳ module nào: navigateTo('rooms')
  */
 export function navigateTo(path) {
-  window.location.hash = `/${path}`;
+  // Use History API for clean URLs (e.g., /dashboard)
+  const newUrl = `${import.meta.env.BASE_URL}${path}`;
+  history.pushState(null, '', newUrl);
+  handleRouteChange();
 }
 
 /**

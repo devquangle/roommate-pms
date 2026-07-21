@@ -147,7 +147,63 @@ test.describe('RoomMate Contracts Management E2E', () => {
     await expect(errorAlert).toBeVisible();
     await expect(errorAlert).toContainText('trùng thời gian');
   });
-});
+  test('should allow terminating an active contract and updating room status to available', async ({ page }) => {
+    // 1. Tự chuẩn bị dữ liệu độc lập
+    await page.goto('/');
+    await page.evaluate(() => {
+      const room = {
+        id: 'P703',
+        name: 'Phòng 703',
+        floor: 'Tầng 7',
+        type: 'standard',
+        price: 3000000,
+        area: 25,
+        status: 'rented',
+        maxTenants: 3
+      };
+      const tenant = {
+        id: 't-test-3',
+        fullName: 'Người thuê 3',
+        phone: '0905556666',
+        status: 'active'
+      };
+      const activeContract = {
+        id: 'c-existing-3',
+        roomId: 'P703',
+        tenantId: 't-test-3',
+        startDate: '2026-01-01',
+        endDate: '2027-01-01',
+        roomPrice: 3000000,
+        deposit: 3000000,
+        status: 'active'
+      };
+      localStorage.setItem('rooms', JSON.stringify([room]));
+      localStorage.setItem('tenants', JSON.stringify([tenant]));
+      localStorage.setItem('contracts', JSON.stringify([activeContract]));
+    });
 
+    // 2. Chuyển đến trang hợp đồng
+    await page.goto('/contracts');
+    await expect(page.locator('[data-testid="contracts-table-body"]')).toContainText('Phòng 703');
+
+    // 3. Mở dropdown menu của hợp đồng này
+    await page.locator('[data-testid="contracts-table-body"] [data-bs-toggle="dropdown"]').first().click();
+
+    // 4. Bấm nút Kết thúc bình thường
+    await page.locator('.btn-action-end[data-action="end"]').first().click();
+
+    // 5. Xác nhận trong Modal
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="btn-confirm-ok"]').click();
+
+    // 6. Kiểm tra trạng thái hợp đồng đã đổi thành Hết hạn
+    await expect(page.locator('[data-testid="contracts-table-body"]')).toContainText('Hết hạn');
+
+    // 7. Kiểm tra trạng thái phòng đã về Trống
+    await page.goto('/rooms');
+    await page.locator('[data-testid="view-table"]').click();
+    await expect(page.locator('[data-testid="room-row-P703"]')).toContainText('Trống');
+  });
+});
 
 

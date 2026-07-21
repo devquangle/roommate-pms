@@ -6,6 +6,9 @@ import { getOutstandingInvoices, calculateDaysOverdue } from '../services/debt-s
 import { getRoomById } from '../services/room-service.js';
 import { getTenantById } from '../services/tenant-service.js';
 import { formatDateToDisplay } from '../utils/date-utils.js';
+import * as StorageService from '../services/storage-service.js';
+import { STORAGE_KEYS } from '../constants/storage-keys.js';
+import { ROOM_STATUS, CONTRACT_STATUS, INVOICE_STATUS } from '../constants/statuses.js';
 
 /**
  * Render danh sách cảnh báo lên container.
@@ -64,6 +67,56 @@ export function renderAlertList(container) {
       title: `Chưa chốt điện nước - Phòng ${room.name}`,
       message: `Chưa ghi nhận chỉ số điện nước tháng ${currentMonth}/${currentYear}.`
     });
+  });
+
+  const rooms = StorageService.getAll(STORAGE_KEYS.ROOMS) || [];
+  const contracts = StorageService.getAll(STORAGE_KEYS.CONTRACTS) || [];
+  const invoices = StorageService.getAll(STORAGE_KEYS.INVOICES) || [];
+
+  // 4. Phòng trống lâu ngày (Info)
+  rooms.forEach(room => {
+    if (room.status === ROOM_STATUS.AVAILABLE) {
+      alerts.push({
+        type: 'info',
+        class: 'alert-item-info',
+        icon: '🏠',
+        title: `Phòng trống - ${room.name}`,
+        message: `Phòng đang ở trạng thái trống, chưa có hợp đồng thuê.`
+      });
+    }
+  });
+
+  // 5. Hợp đồng chờ hiệu lực (Info)
+  contracts.forEach(c => {
+    if (c.status === CONTRACT_STATUS.PENDING) {
+      const room = getRoomById(c.roomId);
+      const roomName = room ? room.name : c.roomId;
+      alerts.push({
+        type: 'info',
+        class: 'alert-item-info',
+        icon: '⏳',
+        title: `Hợp đồng chờ hiệu lực - Phòng ${roomName}`,
+        message: `Hợp đồng sắp bắt đầu vào ngày ${formatDateToDisplay(c.startDate)}.`
+      });
+    }
+  });
+
+  // 6. Hóa đơn chưa thanh toán (Warning - Not overdue yet)
+  invoices.forEach(inv => {
+    if (inv.status === INVOICE_STATUS.UNPAID || inv.status === INVOICE_STATUS.PARTIAL) {
+      const days = calculateDaysOverdue(inv.dueDate, today);
+      if (days <= 0) { // Not overdue
+        const room = getRoomById(inv.roomId);
+        const roomName = room ? room.name : inv.roomId;
+        alerts.push({
+          type: 'warning',
+          class: 'alert-item-warning',
+          icon: '⏳',
+          title: `Chờ thanh toán - Phòng ${roomName}`,
+          message: `Hóa đơn tháng ${inv.month}/${inv.year} còn nợ ${inv.remainingDebt?.toLocaleString('vi-VN')} đ (Hạn: ${formatDateToDisplay(inv.dueDate)}).`
+        });
+      }
+    }
   });
 
   if (alerts.length === 0) {

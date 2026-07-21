@@ -145,6 +145,14 @@ function renderStatCardsList(roomStats, tenantStats, financial, currentMonthCons
       testId: 'stat-rented-rooms'
     }),
     renderStatCard({
+      title: 'Phòng đang bảo trì',
+      value: roomStats.maintenance,
+      icon: '🛠️',
+      iconBg: 'bg-danger-subtle',
+      iconColor: 'text-danger',
+      testId: 'stat-maintenance-rooms'
+    }),
+    renderStatCard({
       title: 'Tỷ lệ lấp đầy',
       value: `${roomStats.occupancyRate}%`,
       icon: '📊',
@@ -167,6 +175,14 @@ function renderStatCardsList(roomStats, tenantStats, financial, currentMonthCons
       iconBg: 'bg-success-subtle',
       iconColor: 'text-success',
       testId: 'stat-monthly-revenue'
+    }),
+    renderStatCard({
+      title: 'Tổng tiền thực thu',
+      value: formatCurrency(financial.totalCollected),
+      icon: '💵',
+      iconBg: 'bg-primary-subtle',
+      iconColor: 'text-primary',
+      testId: 'stat-total-collected'
     }),
     renderStatCard({
       title: 'Tổng công nợ',

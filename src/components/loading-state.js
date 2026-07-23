@@ -148,6 +148,88 @@ export function renderInvoicesTableSkeleton() {
 }
 
 /**
+ * Skeleton cho các dòng trong bảng người thuê (chỉ trả về thẻ <tr>)
+ * @returns {string} Chuỗi HTML
+ */
+export function renderTenantsTableRowsSkeleton() {
+  return Array.from({ length: 5 }).map(() => `
+    <tr>
+      <td><div class="placeholder rounded-circle bg-secondary opacity-25" style="width: 32px; height: 32px;"></div></td>
+      <td>
+        <span class="placeholder col-6 bg-secondary opacity-50 mb-1 d-block"></span>
+        <span class="placeholder col-8 bg-secondary opacity-25 d-block" style="height: 10px;"></span>
+      </td>
+      <td><span class="placeholder col-8 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-8 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-7 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td class="text-end"><span class="placeholder col-5 bg-secondary opacity-50"></span></td>
+    </tr>
+  `).join('');
+}
+
+/**
+ * Skeleton cho các dòng trong bảng dịch vụ (chỉ trả về thẻ <tr>)
+ * @returns {string} Chuỗi HTML
+ */
+export function renderServicesTableRowsSkeleton() {
+  return Array.from({ length: 5 }).map(() => `
+    <tr>
+      <td><span class="placeholder col-8 bg-secondary opacity-50"></span></td>
+      <td><span class="placeholder col-7 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-4 bg-secondary opacity-25"></span></td>
+      <td class="text-end"><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td class="text-center"><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td class="text-center"><span class="placeholder col-5 bg-secondary opacity-50"></span></td>
+      <td class="text-center"><span class="placeholder col-6 bg-secondary opacity-50"></span></td>
+    </tr>
+  `).join('');
+}
+
+/**
+ * Skeleton cho các dòng trong bảng chỉ số điện nước (chỉ trả về thẻ <tr>)
+ * @returns {string} Chuỗi HTML
+ */
+export function renderMetersTableRowsSkeleton() {
+  return Array.from({ length: 5 }).map(() => `
+    <tr>
+      <td><span class="placeholder col-8 bg-secondary opacity-50"></span></td>
+      <td><span class="placeholder col-7 bg-secondary opacity-25"></span></td>
+      <td class="text-center"><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td class="text-center"><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td class="text-center"><span class="placeholder col-8 bg-secondary opacity-50"></span></td>
+      <td class="text-center"><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td class="text-center"><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td class="text-center"><span class="placeholder col-8 bg-secondary opacity-50"></span></td>
+      <td><span class="placeholder col-7 bg-secondary opacity-25"></span></td>
+      <td class="text-center"><span class="placeholder col-4 bg-secondary opacity-50"></span></td>
+    </tr>
+  `).join('');
+}
+
+/**
+ * Skeleton cho các dòng trong bảng hợp đồng (chỉ trả về thẻ <tr>)
+ * @returns {string} Chuỗi HTML
+ */
+export function renderContractsTableRowsSkeleton() {
+  return Array.from({ length: 5 }).map(() => `
+    <tr>
+      <td><span class="placeholder col-8 bg-secondary opacity-50"></span></td>
+      <td><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-8 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-7 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-7 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-6 bg-secondary opacity-25"></span></td>
+      <td><span class="placeholder col-6 bg-secondary opacity-50"></span></td>
+      <td class="text-end"><span class="placeholder col-4 bg-secondary opacity-50"></span></td>
+    </tr>
+  `).join('');
+}
+
+/**
  * Trả về mã HTML của Spinner phụ thuộc văn bản dùng cho nút Lưu/Thực thi
  * @param {string} [text='Đang xử lý...'] - Văn bản đi kèm loading
  * @returns {string} Chuỗi HTML

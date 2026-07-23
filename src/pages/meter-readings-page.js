@@ -24,7 +24,8 @@ import { showToast } from '../components/toast.js';
 import { STORAGE_KEYS } from '../constants/storage-keys.js';
 import * as StorageService from '../services/storage-service.js';
 import { renderEmptyState } from '../components/empty-state.js';
-import { renderProgressBar } from '../components/loading-state.js';
+import { renderProgressBar, renderMetersTableRowsSkeleton } from '../components/loading-state.js';
+import { renderPagination } from '../components/pagination.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 // Mặc định chọn tháng 7 năm 2026 như yêu cầu thiết kế
@@ -32,6 +33,8 @@ let currentMonth = 7;
 let currentYear = 2026;
 let showOnlyUnrecorded = false; // Trạng thái bộ lọc "Chỉ hiển thị phòng chưa ghi"
 let tableRows = []; // Chứa trạng thái các dòng hiện hành của bảng nhập liệu
+let currentPage = 1;
+const ITEMS_PER_PAGE = 10;
 
 export function renderMetersPage(container) {
   container.innerHTML = `
@@ -128,6 +131,7 @@ export function renderMetersPage(container) {
             </tbody>
           </table>
         </div>
+        <div id="paginationContainer" class="p-3 bg-light border-top"></div>
       </div>
     </div>
   `;
@@ -139,9 +143,16 @@ export function renderMetersPage(container) {
 // ─── TẢI VÀ KHỞI TẠO BẢNG ──────────────────────────────────────
 
 function initializeTable() {
-  const rooms = getRooms();
-  const readings = getReadings();
-  const contracts = StorageService.getAll(STORAGE_KEYS.CONTRACTS);
+  currentPage = 1;
+  const tbody = document.getElementById('metersTableBody');
+  const paginationContainer = document.getElementById('paginationContainer');
+  if (tbody) tbody.innerHTML = renderMetersTableRowsSkeleton();
+  if (paginationContainer) paginationContainer.innerHTML = '';
+
+  setTimeout(() => {
+    const rooms = getRooms();
+    const readings = getReadings();
+    const contracts = StorageService.getAll(STORAGE_KEYS.CONTRACTS);
 
   // Chỉ lấy phòng có hợp đồng hiệu lực trong kỳ này
   const activeRooms = rooms.filter(r => hasActiveContractInMonth(r.id, currentMonth, currentYear));
@@ -203,6 +214,7 @@ function initializeTable() {
 
   filterTableRows();
   updateSummaryCards();
+  }, 300);
 }
 
 // ─── TÍNH TOÁN VÀ KIỂM TRA LỖI TRỰC TIẾP ───────────────────────
@@ -348,10 +360,17 @@ function filterTableRows() {
         </td>
       </tr>
     `;
+    if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
 
-  tbody.innerHTML = filtered.map(row => {
+  // Phân trang
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const list = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  tbody.innerHTML = list.map(row => {
     const errorHtml = row.error
       ? `<span class="text-danger small fw-bold" title="${row.error}"><i class="bi bi-x-circle-fill me-1"></i>Chỉ số giảm</span>`
       : (row.isAbnormal
@@ -409,6 +428,10 @@ function filterTableRows() {
       </tr>
     `;
   }).join('');
+
+  if (paginationContainer) {
+    paginationContainer.innerHTML = renderPagination(currentPage, filtered.length, ITEMS_PER_PAGE);
+  }
 }
 
 // ─── CẬP NHẬT THẺ TỔNG QUAN ────────────────────────────────────
@@ -467,8 +490,24 @@ function bindEvents() {
   const filterUnrecorded = document.getElementById('filterUnrecorded');
   if (filterUnrecorded) {
     filterUnrecorded.addEventListener('change', () => {
+      currentPage = 1;
       showOnlyUnrecorded = filterUnrecorded.checked;
       filterTableRows();
+    });
+  }
+
+  // Phân trang
+  const paginationContainer = document.getElementById('paginationContainer');
+  if (paginationContainer) {
+    paginationContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-page');
+      if (!btn || btn.classList.contains('disabled')) return;
+      e.preventDefault();
+      const page = parseInt(btn.dataset.page, 10);
+      if (page && page !== currentPage) {
+        currentPage = page;
+        filterTableRows();
+      }
     });
   }
 

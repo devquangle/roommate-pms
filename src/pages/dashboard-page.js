@@ -24,6 +24,7 @@ import Chart from 'chart.js/auto';
 // Khai báo biến toàn cục để lưu trữ các thực thể Chart, phục vụ việc hủy chart cũ trước khi vẽ mới
 let revenueChartInstance = null;
 let roomStatusChartInstance = null;
+let consumptionChartInstance = null;
 
 export function renderDashboardPage(container) {
   // Render loading skeleton đầu tiên
@@ -88,6 +89,19 @@ export function renderDashboardPage(container) {
           </div>
         </div>
 
+        <!-- Biểu đồ Tiêu thụ điện nước -->
+        <div class="col-lg-12">
+          <div class="card chart-card p-3">
+            <h6 class="mb-3 text-muted">Tiêu thụ Điện & Nước 6 tháng gần nhất</h6>
+            <div class="chart-container-custom">
+              <canvas id="consumptionChart" data-testid="consumption-chart-canvas"></canvas>
+            </div>
+            <div id="consumptionChartEmpty" class="text-muted text-center d-none py-4">
+              Chưa có dữ liệu tiêu thụ điện nước.
+            </div>
+          </div>
+        </div>
+
         <!-- Danh sách Cảnh báo cần xử lý -->
         <div class="col-12 mt-3">
           <div class="card alert-card p-3">
@@ -110,6 +124,7 @@ export function renderDashboardPage(container) {
     // 5. Khởi dựng các biểu đồ Chart.js
     renderRevenueChart();
     renderRoomStatusChart(roomStats);
+    renderConsumptionChart();
   }, 500);
 }
 
@@ -350,6 +365,69 @@ function renderRoomStatusChart(roomStats) {
               size: 11
             }
           }
+        }
+      }
+    }
+  });
+}
+
+function renderConsumptionChart() {
+  const canvas = document.getElementById('consumptionChart');
+  const emptyEl = document.getElementById('consumptionChartEmpty');
+  if (!canvas) return;
+
+  if (consumptionChartInstance) {
+    consumptionChartInstance.destroy();
+    consumptionChartInstance = null;
+  }
+
+  const allData = getMonthlyConsumption();
+  const dataToShow = allData.slice(-6);
+
+  if (dataToShow.length === 0) {
+    canvas.style.display = 'none';
+    emptyEl && emptyEl.classList.remove('d-none');
+    return;
+  }
+
+  canvas.style.display = 'block';
+  emptyEl && emptyEl.classList.add('d-none');
+
+  const labels = dataToShow.map(d => `T${d.month}/${d.year}`);
+  const electricity = dataToShow.map(d => d.totalElectricity);
+  const water = dataToShow.map(d => d.totalWater);
+
+  consumptionChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Điện (kWh)',
+          data: electricity,
+          backgroundColor: 'rgba(255, 193, 7, 0.2)',
+          borderColor: 'rgb(255, 193, 7)',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: 'Nước (m³)',
+          data: water,
+          backgroundColor: 'rgba(13, 202, 240, 0.2)',
+          borderColor: 'rgb(13, 202, 240)',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true
         }
       }
     }

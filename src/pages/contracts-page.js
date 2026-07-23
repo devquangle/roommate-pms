@@ -38,6 +38,7 @@ import { showToast } from '../components/toast.js';
 import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openContractForm } from '../components/contract-form.js';
 import { openContractDetail } from '../components/contract-detail.js';
+import { renderContractsTableRowsSkeleton } from '../components/loading-state.js';
 import { printContract } from '../utils/print-utils.js';
 import { initSearchableSelect } from '../components/searchable-select.js';
 
@@ -72,7 +73,7 @@ export function renderContractsPage(container) {
       <div class="row g-2 mb-4" id="statsContainer"></div>
 
       <!-- Filters -->
-      <div class="d-flex flex-wrap align-items-center gap-2 mb-3 bg-light p-2 rounded contracts-filter-bar" data-testid="contracts-filter-bar">
+      <div class="d-flex flex-wrap align-items-center gap-3 mb-4 p-3 bg-white border rounded  contracts-filter-bar" data-testid="contracts-filter-bar">
         <!-- Tìm kiếm -->
         <input type="text" class="form-control form-control-sm flex-grow-1" id="contractSearch" data-testid="input-search-contract"
           placeholder="Tìm theo mã, phòng, người thuê..." />
@@ -100,7 +101,7 @@ export function renderContractsPage(container) {
 
       <!-- Bảng danh sách -->
       <div class="table-responsive">
-        <table class="table table-hover align-middle contracts-table" data-testid="contracts-table">
+        <table class="table table-hover align-middle contracts-table m-0" data-testid="contracts-table">
           <thead class="table-light">
             <tr>
               <th>Mã HĐ</th>
@@ -118,7 +119,7 @@ export function renderContractsPage(container) {
           </tbody>
         </table>
       </div>
-      <div id="paginationContainer" class="mt-3"></div>
+      <div id="paginationContainer" class="p-3 bg-light border-top"></div>
 
       <div id="contractsEmpty" class="text-muted text-center d-none p-4" data-testid="contracts-empty">
         Không tìm thấy hợp đồng nào phù hợp bộ lọc.
@@ -292,75 +293,82 @@ function renderContractsList() {
   const paginationContainer = document.getElementById('paginationContainer');
   if (!tbody) return;
 
-  const allFiltered = getFilteredContracts();
+  // Render skeleton loading
+  tbody.innerHTML = renderContractsTableRowsSkeleton();
+  if (emptyEl) emptyEl.classList.add('d-none');
+  if (paginationContainer) paginationContainer.innerHTML = '';
 
-  if (allFiltered.length === 0) {
-    tbody.innerHTML = '';
-    if (emptyEl) {
-      const hasFilters = currentKeyword || currentFilters.roomId || currentFilters.status || currentFilters.startDate || currentFilters.endDate;
-      emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-contracts', {
-        actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionAddContract',
-        actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '📝 Lập hợp đồng mới'
-      });
-      emptyEl.classList.remove('d-none');
+  setTimeout(() => {
+    const allFiltered = getFilteredContracts();
+
+    if (allFiltered.length === 0) {
+      tbody.innerHTML = '';
+      if (emptyEl) {
+        const hasFilters = currentKeyword || currentFilters.roomId || currentFilters.status || currentFilters.startDate || currentFilters.endDate;
+        emptyEl.innerHTML = renderEmptyState(hasFilters ? 'no-results' : 'no-contracts', {
+          actionId: hasFilters ? 'btnEmptyActionClearFilters' : 'btnEmptyActionAddContract',
+          actionText: hasFilters ? '🧹 Xóa các bộ lọc tìm kiếm' : '📝 Lập hợp đồng mới'
+        });
+        emptyEl.classList.remove('d-none');
+      }
+      if (paginationContainer) paginationContainer.innerHTML = '';
+      return;
     }
-    if (paginationContainer) paginationContainer.innerHTML = '';
-    return;
-  }
 
-  emptyEl && emptyEl.classList.add('d-none');
+    emptyEl && emptyEl.classList.add('d-none');
 
-  // Phân trang
-  const totalPages = Math.ceil(allFiltered.length / ITEMS_PER_PAGE) || 1;
-  if (currentPage > totalPages) currentPage = totalPages;
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const list = allFiltered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    // Phân trang
+    const totalPages = Math.ceil(allFiltered.length / ITEMS_PER_PAGE) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const list = allFiltered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  tbody.innerHTML = list.map(c => {
-    const room = getRoomById(c.roomId);
-    const tenant = getTenantById(c.tenantId);
-    const roomName = room ? `<strong>${room.name}</strong>` : 'N/A';
-    const tenantName = tenant ? tenant.fullName : 'N/A';
-    const expiring = isContractExpiringSoon(c, new Date(), 30);
-    const rowClass = expiring ? 'table-warning' : ''; // Làm nổi bật dòng sắp hết hạn
+    tbody.innerHTML = list.map(c => {
+      const room = getRoomById(c.roomId);
+      const tenant = getTenantById(c.tenantId);
+      const roomName = room ? `<strong>${room.name}</strong>` : 'N/A';
+      const tenantName = tenant ? tenant.fullName : 'N/A';
+      const expiring = isContractExpiringSoon(c, new Date(), 30);
+      const rowClass = expiring ? 'table-warning' : ''; // Làm nổi bật dòng sắp hết hạn
 
-    // Action buttons depend on status
-    const actions = buildActionButtons(c);
+      // Action buttons depend on status
+      const actions = buildActionButtons(c);
 
-    return `
-      <tr class="${rowClass}" data-testid="contract-row-${c.id}" data-id="${c.id}">
-        <td>
-          <a href="#" class="btn-view-contract fw-bold text-decoration-none" data-id="${c.id}" data-testid="btn-view-contract-${c.id}">
-            ${c.id.substring(0, 8).toUpperCase()}
-          </a>
-        </td>
-        <td>${roomName}</td>
-        <td>${tenantName}</td>
-        <td>${c.startDate ? formatDateToDisplay(c.startDate) : 'N/A'}</td>
-        <td>
-          ${c.endDate ? formatDateToDisplay(c.endDate) : 'N/A'}
-          ${expiring ? '<span class="badge bg-danger ms-1" title="Sắp hết hạn">⏰</span>' : ''}
-        </td>
-        <td>${formatCurrency(c.roomPrice)}</td>
-        <td>${formatCurrency(c.deposit)}</td>
-        <td>${getStatusBadge(c.status)}</td>
-        <td class="text-end">
-          <div class="dropdown">
-            <button class="btn btn-light btn-sm rounded-circle p-1" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
-              <i class="bi bi-three-dots-vertical"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-              ${actions}
-            </ul>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
+      return `
+        <tr class="${rowClass}" data-testid="contract-row-${c.id}" data-id="${c.id}">
+          <td>
+            <a href="#" class="btn-view-contract fw-bold text-decoration-none" data-id="${c.id}" data-testid="btn-view-contract-${c.id}">
+              ${c.id.substring(0, 8).toUpperCase()}
+            </a>
+          </td>
+          <td>${roomName}</td>
+          <td>${tenantName}</td>
+          <td>${c.startDate ? formatDateToDisplay(c.startDate) : 'N/A'}</td>
+          <td>
+            ${c.endDate ? formatDateToDisplay(c.endDate) : 'N/A'}
+            ${expiring ? '<span class="badge bg-danger ms-1" title="Sắp hết hạn">⏰</span>' : ''}
+          </td>
+          <td>${formatCurrency(c.roomPrice)}</td>
+          <td>${formatCurrency(c.deposit)}</td>
+          <td>${getStatusBadge(c.status)}</td>
+          <td class="text-end">
+            <div class="dropdown">
+              <button class="btn btn-light btn-sm rounded-circle p-1" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                ${actions}
+              </ul>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
-  if (paginationContainer) {
-    paginationContainer.innerHTML = renderPagination(currentPage, allFiltered.length, ITEMS_PER_PAGE);
-  }
+    if (paginationContainer) {
+      paginationContainer.innerHTML = renderPagination(currentPage, allFiltered.length, ITEMS_PER_PAGE);
+    }
+  }, 300);
 }
 
 function buildActionButtons(contract) {

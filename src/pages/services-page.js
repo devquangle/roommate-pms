@@ -23,6 +23,7 @@ import { showToast } from '../components/toast.js';
 import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openServiceConfigForm } from '../components/service-config-form.js';
 import { renderPagination } from '../components/pagination.js';
+import { renderServicesTableRowsSkeleton } from '../components/loading-state.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentKeyword = '';
@@ -133,77 +134,84 @@ function renderServicesList() {
   const paginationContainer = document.getElementById('paginationContainer');
   if (!tbody) return;
 
-  const list = getFilteredServices();
-  const totalItems = list.length;
+  // Render skeleton loading
+  tbody.innerHTML = renderServicesTableRowsSkeleton();
+  if (emptyEl) emptyEl.classList.add('d-none');
+  if (paginationContainer) paginationContainer.innerHTML = '';
 
-  if (totalItems === 0) {
-    tbody.innerHTML = '';
-    emptyEl && emptyEl.classList.remove('d-none');
-    if (paginationContainer) paginationContainer.innerHTML = '';
-    return;
-  }
+  setTimeout(() => {
+    const list = getFilteredServices();
+    const totalItems = list.length;
 
-  emptyEl && emptyEl.classList.add('d-none');
-
-  // Phân trang dữ liệu dạng mảng slice
-  const start = (currentPage - 1) * ITEMS_PER_PAGE;
-  const end = start + ITEMS_PER_PAGE;
-  const pageList = list.slice(start, end);
-
-  tbody.innerHTML = pageList.map(item => {
-    let calcMethodLabel = CALC_METHOD_LABELS[item.calcMethod] || item.calcMethod;
-    if (!calcMethodLabel) {
-      if (item.type === 'electricity' || item.type === 'water') {
-        calcMethodLabel = 'Theo lượng sử dụng';
-      } else if (item.isPerRoom) {
-        calcMethodLabel = 'Cố định theo phòng';
-      } else if (item.isPerPerson) {
-        calcMethodLabel = 'Theo số người';
-      } else {
-        calcMethodLabel = 'Cố định theo phòng';
-      }
+    if (totalItems === 0) {
+      tbody.innerHTML = '';
+      emptyEl && emptyEl.classList.remove('d-none');
+      if (paginationContainer) paginationContainer.innerHTML = '';
+      return;
     }
-    const isInactive = item.status === 'inactive';
-    const statusBadge = isInactive
-      ? '<span class="badge bg-secondary px-2.5 py-1.5 rounded-pill small">Ngưng áp dụng</span>'
-      : '<span class="badge bg-success px-2.5 py-1.5 rounded-pill small">Đang áp dụng</span>';
 
-    // Định dạng ngày áp dụng
-    const effectiveDate = item.startDate ? formatDateToDisplay(item.startDate) : (item.createdAt ? formatDateToDisplay(item.createdAt) : '01/12/2025');
+    emptyEl && emptyEl.classList.add('d-none');
 
-    // Xây dựng các nút thao tác kích thước btn-sm
-    const editBtn = `<button class="btn btn-outline-primary btn-sm btn-edit-service" data-id="${item.id}" data-testid="btn-edit-service-${item.id}" title="Sửa"><i class="bi bi-pencil"></i></button>`;
-    const toggleStatusBtn = isInactive
-      ? `<button class="btn btn-outline-success btn-sm btn-activate-service" data-id="${item.id}" data-testid="btn-activate-service-${item.id}" title="Kích hoạt lại"><i class="bi bi-play-fill"></i></button>`
-      : `<button class="btn btn-outline-warning btn-sm btn-deactivate-service" data-id="${item.id}" data-testid="btn-deactivate-service-${item.id}" title="Ngưng áp dụng"><i class="bi bi-pause-fill"></i></button>`;
-    const deleteBtn = `<button class="btn btn-outline-danger btn-sm btn-delete-service" data-id="${item.id}" data-testid="btn-delete-service-${item.id}" title="Xóa"><i class="bi bi-trash"></i></button>`;
+    // Phân trang dữ liệu dạng mảng slice
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    const pageList = list.slice(start, end);
 
-    const displayCode = item.code || (item.type === 'electricity' ? 'DIEN' : (item.type === 'water' ? 'NUOC' : (item.type === 'wifi' ? 'WIFI' : (item.type === 'garbage' ? 'RAC' : item.id.toUpperCase()))));
+    tbody.innerHTML = pageList.map(item => {
+      let calcMethodLabel = CALC_METHOD_LABELS[item.calcMethod] || item.calcMethod;
+      if (!calcMethodLabel) {
+        if (item.type === 'electricity' || item.type === 'water') {
+          calcMethodLabel = 'Theo lượng sử dụng';
+        } else if (item.isPerRoom) {
+          calcMethodLabel = 'Cố định theo phòng';
+        } else if (item.isPerPerson) {
+          calcMethodLabel = 'Theo số người';
+        } else {
+          calcMethodLabel = 'Cố định theo phòng';
+        }
+      }
+      const isInactive = item.status === 'inactive';
+      const statusBadge = isInactive
+        ? '<span class="badge bg-secondary px-2.5 py-1.5 rounded-pill small">Ngưng áp dụng</span>'
+        : '<span class="badge bg-success px-2.5 py-1.5 rounded-pill small">Đang áp dụng</span>';
 
-    return `
-      <tr data-testid="service-row-${item.id}">
-        <td><strong>${displayCode}</strong></td>
-        <td><strong>${item.name}</strong></td>
-        <td>${calcMethodLabel}</td>
-        <td>${item.unit}</td>
-        <td class="text-end fw-bold text-dark">${formatCurrency(item.unitPrice)}</td>
-        <td class="text-center text-muted small">${effectiveDate}</td>
-        <td class="text-center">${statusBadge}</td>
-        <td class="text-center">
-          <div class="btn-group gap-1">
-            ${editBtn}
-            ${toggleStatusBtn}
-            ${deleteBtn}
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
+      // Định dạng ngày áp dụng
+      const effectiveDate = item.startDate ? formatDateToDisplay(item.startDate) : (item.createdAt ? formatDateToDisplay(item.createdAt) : '01/12/2025');
 
-  // Vẽ phân trang
-  if (paginationContainer) {
-    paginationContainer.innerHTML = renderPagination(currentPage, totalItems, ITEMS_PER_PAGE);
-  }
+      // Xây dựng các nút thao tác kích thước btn-sm
+      const editBtn = `<button class="btn btn-outline-primary btn-sm btn-edit-service" data-id="${item.id}" data-testid="btn-edit-service-${item.id}" title="Sửa"><i class="bi bi-pencil"></i></button>`;
+      const toggleStatusBtn = isInactive
+        ? `<button class="btn btn-outline-success btn-sm btn-activate-service" data-id="${item.id}" data-testid="btn-activate-service-${item.id}" title="Kích hoạt lại"><i class="bi bi-play-fill"></i></button>`
+        : `<button class="btn btn-outline-warning btn-sm btn-deactivate-service" data-id="${item.id}" data-testid="btn-deactivate-service-${item.id}" title="Ngưng áp dụng"><i class="bi bi-pause-fill"></i></button>`;
+      const deleteBtn = `<button class="btn btn-outline-danger btn-sm btn-delete-service" data-id="${item.id}" data-testid="btn-delete-service-${item.id}" title="Xóa"><i class="bi bi-trash"></i></button>`;
+
+      const displayCode = item.code || (item.type === 'electricity' ? 'DIEN' : (item.type === 'water' ? 'NUOC' : (item.type === 'wifi' ? 'WIFI' : (item.type === 'garbage' ? 'RAC' : item.id.toUpperCase()))));
+
+      return `
+        <tr data-testid="service-row-${item.id}">
+          <td><strong>${displayCode}</strong></td>
+          <td><strong>${item.name}</strong></td>
+          <td>${calcMethodLabel}</td>
+          <td>${item.unit}</td>
+          <td class="text-end fw-bold text-dark">${formatCurrency(item.unitPrice)}</td>
+          <td class="text-center text-muted small">${effectiveDate}</td>
+          <td class="text-center">${statusBadge}</td>
+          <td class="text-center">
+            <div class="btn-group gap-1">
+              ${editBtn}
+              ${toggleStatusBtn}
+              ${deleteBtn}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Vẽ phân trang
+    if (paginationContainer) {
+      paginationContainer.innerHTML = renderPagination(currentPage, totalItems, ITEMS_PER_PAGE);
+    }
+  }, 300);
 }
 
 function bindEvents() {

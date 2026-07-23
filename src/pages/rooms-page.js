@@ -73,7 +73,7 @@ export function renderRoomsPage(container) {
       <div class="row g-2 mb-4" id="statsContainer"></div>
 
       <!-- Toolbar -->
-      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <div class="d-flex flex-wrap align-items-center gap-3 mb-4 p-3 bg-white border rounded ">
         <!-- Tìm kiếm -->
         <input type="text" class="form-control form-control-sm" style="max-width:200px;"
           id="roomSearch" data-testid="input-search-room"
@@ -194,7 +194,7 @@ function renderMainContent() {
     if (currentView === 'table') {
       wrapper.innerHTML = `
         <div class="table-responsive">
-          <table class="table table-hover align-middle" data-testid="rooms-table">
+          <table class="table table-hover align-middle m-0" data-testid="rooms-table">
             <thead class="table-light">
               <tr>
                 <th>Mã phòng</th>
@@ -211,7 +211,7 @@ function renderMainContent() {
             <tbody id="roomsTableBody" data-testid="rooms-table-body"></tbody>
           </table>
         </div>
-        <div id="paginationContainer" class="mt-3"></div>
+        <div id="paginationContainer" class="p-3 bg-light border-top"></div>
       `;
       renderTableRows();
     } else {

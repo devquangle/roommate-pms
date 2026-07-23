@@ -31,6 +31,7 @@ import { getRooms } from "../services/room-service.js";
 import { initSearchableSelect } from "../components/searchable-select.js";
 import { ROOM_STATUS_LABELS } from "../constants/statuses.js";
 import { renderTenantsTableRowsSkeleton } from "../components/loading-state.js";
+import { openContractDetail } from "../components/contract-detail.js";
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentKeyword = "";
@@ -205,10 +206,15 @@ function renderTenantsList() {
             ? formatDateToDisplay(currentRoomInfo.contract.startDate)
             : '<span class="text-muted small">—</span>';
 
-        const isInactive = item.status === "inactive";
-        const statusBadge = isInactive
-          ? '<span class="badge badge-tenant-inactive">Đã trả phòng</span>'
-          : '<span class="badge badge-tenant-active">Đang thuê</span>';
+        const isInactive = item.status === "inactive" || item.status === "archived";
+        let statusBadge = "";
+        if (isInactive) {
+          statusBadge = '<span class="badge badge-tenant-inactive">Đã trả phòng</span>';
+        } else if (currentRoomInfo) {
+          statusBadge = '<span class="badge badge-tenant-active">Đang thuê</span>';
+        } else {
+          statusBadge = '<span class="badge badge-tenant-unassigned">Chưa có phòng</span>';
+        }
 
         const initial = item.fullName.charAt(0).toUpperCase();
 
@@ -333,7 +339,7 @@ function bindEvents() {
           handleEdit(id);
           break;
         case "contracts":
-          showToast("Chức năng xem hợp đồng đang phát triển", "info");
+          handleContracts(id);
           break;
         case "history":
           handleHistory(id);
@@ -386,6 +392,25 @@ function bindEvents() {
 }
 
 // ─── ACTION HANDLERS ───────────────────────────────────────────
+
+function handleContracts(id) {
+  const tenant = getTenantById(id);
+  if (!tenant) return;
+
+  const currentRoomInfo = getCurrentRoomOfTenant(id);
+  if (currentRoomInfo && currentRoomInfo.contract) {
+    openContractDetail({ contract: currentRoomInfo.contract });
+    return;
+  }
+
+  const history = getTenantRentalHistory(id);
+  if (history.length > 0 && history[0].contract) {
+    openContractDetail({ contract: history[0].contract });
+    return;
+  }
+
+  showToast(`Khách thuê "${tenant.fullName}" chưa có hợp đồng nào trong hệ thống.`, "info");
+}
 
 function handleHistory(id) {
   const tenant = getTenantById(id);

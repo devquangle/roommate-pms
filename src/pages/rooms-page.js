@@ -36,6 +36,8 @@ import { formatCurrency } from '../utils/currency-utils.js';
 import { showToast } from '../components/toast.js';
 import { showConfirmDialog } from '../components/confirm-dialog.js';
 import { openRoomForm } from '../components/room-form.js';
+import { openContractDetail } from '../components/contract-detail.js';
+import { openInvoiceForm } from '../components/invoice-form.js';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentKeyword = '';
@@ -621,15 +623,11 @@ function bindContentEvents() {
     if (!id || !action) return;
 
     switch (action) {
-      case 'view':     handleView(id);   break;
-      case 'edit':     handleEdit(id);   break;
-      case 'delete':   handleDelete(id); break;
-      case 'contracts':
-        showToast('Chức năng xem hợp đồng đang phát triển', 'info');
-        break;
-      case 'invoice':
-        showToast('Chức năng lập hóa đơn đang phát triển', 'info');
-        break;
+      case 'view':     handleView(id);      break;
+      case 'edit':     handleEdit(id);      break;
+      case 'delete':   handleDelete(id);    break;
+      case 'contracts': handleContracts(id); break;
+      case 'invoice':  handleInvoice(id);   break;
     }
   });
 
@@ -648,6 +646,39 @@ function bindContentEvents() {
 }
 
 // ─── ACTION HANDLERS ───────────────────────────────────────────
+function handleContracts(roomId) {
+  const room = getRoomById(roomId);
+  if (!room) return;
+
+  const activeContract = getActiveContractByRoom(roomId);
+  if (activeContract) {
+    openContractDetail({ contract: activeContract });
+    return;
+  }
+
+  const contracts = filterContracts({ roomId });
+  if (contracts.length > 0) {
+    contracts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    openContractDetail({ contract: contracts[0] });
+    return;
+  }
+
+  showToast(`Phòng "${room.name}" chưa có hợp đồng nào trong hệ thống.`, 'info');
+}
+
+function handleInvoice(roomId) {
+  const room = getRoomById(roomId);
+  if (!room) return;
+
+  const activeContract = getActiveContractByRoom(roomId);
+  if (!activeContract && room.status === ROOM_STATUS.AVAILABLE) {
+    showToast(`Phòng "${room.name}" hiện đang trống và chưa có hợp đồng để lập hóa đơn.`, 'warning');
+    return;
+  }
+
+  openInvoiceForm({ roomId });
+}
+
 function handleView(id) {
   const room = getRoomById(id);
   if (!room) return;

@@ -11,6 +11,11 @@
   color: #fff;
 }
 
+.badge-tenant-unassigned {
+  background-color: #ffc107;
+  color: #000;
+}
+
 /* ─── Lịch sử thuê phòng (Rental History List) ───────────────────── */
 .rental-history-item {
   border-left: 3px solid #6c757d;

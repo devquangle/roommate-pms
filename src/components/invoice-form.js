@@ -486,7 +486,7 @@ function handleSave(status) {
  * @param {Object} options.invoice - (Tùy chọn) Hóa đơn cần sửa. Nếu có, form sẽ vào chế độ Update.
  * @param {Function} options.onSave - (Tùy chọn) Callback được gọi khi lưu (cho chế độ Update).
  */
-export function openInvoiceForm({ invoice = null, onSave = null } = {}) {
+export function openInvoiceForm({ invoice = null, roomId = '', onSave = null } = {}) {
   if (!containerEl) {
     containerEl = document.createElement('div');
     document.body.appendChild(containerEl);
@@ -496,7 +496,7 @@ export function openInvoiceForm({ invoice = null, onSave = null } = {}) {
   state = {
     isEdit: !!invoice,
     onSaveCallback: onSave,
-    roomId: invoice ? invoice.roomId : '',
+    roomId: invoice ? invoice.roomId : (roomId || ''),
     month: invoice ? invoice.month : new Date().getMonth() + 1,
     year: invoice ? invoice.year : new Date().getFullYear(),
     contract: null,
@@ -538,8 +538,12 @@ export function openInvoiceForm({ invoice = null, onSave = null } = {}) {
     recalculateTotals();
     renderForm();
   } else {
-    // Tải form trống
-    renderForm();
+    // Tải form trống hoặc nạp sẵn dữ liệu phòng nếu có roomId
+    if (state.roomId) {
+      loadRoomData();
+    } else {
+      renderForm();
+    }
   }
 
   const modalEl = document.getElementById('invoiceFormModal');

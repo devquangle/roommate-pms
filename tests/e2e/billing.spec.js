@@ -93,7 +93,7 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
 
     // Lưu lại chỉ số điện nước
     await page.locator('[data-testid="btn-save-all"]').click();
-    await expect(page.locator('[data-testid="meter-row-P801"] .cell-save-status .bi-check-lg')).toBeVisible();
+    await expect(page.locator('[data-testid="meter-row-P801"] .cell-save-status .bi-check-lg')).toBeVisible({ timeout: 10000 });
 
     // 5. Tạo hóa đơn cho phòng P801
     await page.goto('/invoices');

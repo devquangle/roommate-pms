@@ -21,10 +21,15 @@ export function openTenantProfile(tenantId) {
   const roomName = currentRoomInfo ? `Phòng ${currentRoomInfo.room.name}` : 'Không có phòng';
   const moveInDate = currentRoomInfo && currentRoomInfo.contract ? formatDateToDisplay(currentRoomInfo.contract.startDate) : '—';
   
-  const isInactive = tenant.status === 'inactive';
-  const statusBadge = isInactive
-    ? '<span class="badge bg-secondary">Đã trả phòng</span>'
-    : '<span class="badge bg-success">Đang thuê</span>';
+  const isInactive = tenant.status === 'inactive' || tenant.status === 'archived';
+  let statusBadge = '';
+  if (isInactive) {
+    statusBadge = '<span class="badge bg-secondary">Đã trả phòng</span>';
+  } else if (currentRoomInfo) {
+    statusBadge = '<span class="badge bg-success">Đang thuê</span>';
+  } else {
+    statusBadge = '<span class="badge bg-warning text-dark">Chưa có phòng</span>';
+  }
     
   const initial = tenant.fullName.charAt(0).toUpperCase();
 

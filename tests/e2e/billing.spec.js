@@ -31,10 +31,10 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
 
     // Ghi chỉ số điện nước
     await page.goto('/meters');
-    await page.locator('[data-testid="filter-month"]').selectOption(String(month));
-    await page.locator('[data-testid="filter-year"]').selectOption(String(year));
+    const elecInput = page.locator('[data-testid="input-elec-new-P801"]');
+    await expect(elecInput).toBeVisible();
 
-    await page.locator('[data-testid="input-elec-new-P801"]').fill('150');
+    await elecInput.fill('150');
     await page.locator('[data-testid="input-water-new-P801"]').fill('12');
     await page.locator('[data-testid="btn-save-all"]').click();
     await expect(page.locator('[data-testid="meter-row-P801"] .cell-save-status .bi-check-lg')).toBeVisible();

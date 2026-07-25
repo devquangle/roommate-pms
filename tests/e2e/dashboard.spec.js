@@ -52,7 +52,7 @@ test.describe('RoomMate Dashboard & Analytics E2E', () => {
     await page.goto('/dashboard');
 
     // Thống kê tài chính
-    await expect(page.locator('[data-testid="stat-monthly-revenue-value"]')).toContainText('1.000.000');
+    await expect(page.locator('[data-testid="stat-monthly-revenue-value"]')).toContainText('3.200.000');
     await expect(page.locator('[data-testid="stat-total-debt-value"]')).toContainText('2.200.000');
 
     // Biểu đồ

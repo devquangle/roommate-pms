@@ -145,7 +145,7 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
 
     // Mở dropdown thao tác và chọn Hủy hóa đơn
     await row.locator('[data-bs-toggle="dropdown"]').click();
-    await page.locator('.btn-action-cancel-invoice').first().click();
+    await page.locator('.btn-cancel-invoice').first().click();
 
     // Xác nhận Modal
     await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();

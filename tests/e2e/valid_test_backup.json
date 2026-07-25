@@ -1,1 +1,1 @@
-{"rooms":[{"id":"P906","name":"Phòng 906","floor":"Tầng 9","type":"standard","price":2700000,"area":25,"status":"available","maxTenants":3}],"tenants":[],"contracts":[],"invoices":[],"payments":[],"meterReadings":[],"serviceConfigs":[]}
+{"rooms":[{"id":"P906","name":"Phòng 906","floor":"Tầng 9","type":"standard","price":2700000,"area":25,"status":"available","maxTenants":3}],"tenants":[],"contracts":[],"invoices":[],"payments":[],"meter_readings":[],"serviceConfigs":[]}

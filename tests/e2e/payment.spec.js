@@ -72,10 +72,19 @@ test.describe('RoomMate Payments & Dashboard Updates E2E', () => {
         dueDate: '2026-08-10'
       };
 
+      const initialPayment = {
+        id: 'p-init-902',
+        invoiceId: 'i-test-pay-2',
+        amount: 1200000,
+        method: 'transfer',
+        date: '2026-07-15'
+      };
+
       localStorage.setItem('rooms', JSON.stringify([room]));
       localStorage.setItem('tenants', JSON.stringify([tenant]));
       localStorage.setItem('contracts', JSON.stringify([contract]));
       localStorage.setItem('invoices', JSON.stringify([invoice]));
+      localStorage.setItem('payments', JSON.stringify([initialPayment]));
     });
 
     // Mở trang Thanh toán và trả nốt 800.000 VNĐ

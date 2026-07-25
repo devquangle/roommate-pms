@@ -5,10 +5,11 @@ Hệ thống quản lý nhà trọ và hóa đơn điện nước chuyên nghi�
 ---
 
 ## Thông tin dự án
-* **Dự án:** Cá nhân (Personal Project)
-* **Tác giả:** Huỳnh Quảng Lê (`devquangle`)
-* **Repository GitHub:** https://github.com/devquangle/roommate-pms
-* **GitHub Pages:** https://devquangle.github.io/roommate-pms/
+
+- **Dự án:** Cá nhân (Personal Project)
+- **Tác giả:** Huỳnh Quang Lê (`devquangle`)
+- **Repository GitHub:** https://github.com/devquangle/roommate-pms
+- **GitHub Pages:** https://devquangle.github.io/roommate-pms/
 
 ---
 
@@ -171,14 +172,23 @@ NODE_ENV=production npm run build
 
 Giao diện ứng dụng được thiết kế theo phong cách hiện đại, trực quan, hỗ trợ responsive mượt mà trên điện thoại và máy tính:
 
-- **Tổng quan (Dashboard):** Hiển thị các thẻ chỉ số tài chính, biểu đồ lấp đầy phòng và điện nước tiêu thụ.
-- **Quản lý phòng trọ:** Danh sách phòng trọ dạng lưới/bảng, bộ lọc trạng thái và modal thông tin chi tiết.
-- **Quản lý Hóa đơn:** Danh sách hóa đơn, trạng thái thanh toán, xem/in hóa đơn chuẩn khổ giấy A4.
-- **Sao lưu dữ liệu:** Giao diện xuất/nhập dữ liệu JSON kèm cảnh báo an toàn và khôi phục dữ liệu mẫu.
+- **Tổng quan (Dashboard):** Hiển thị các thẻ chỉ số tài chính, biểu đồ lấp đầy phòng, biểu đồ tiêu thụ điện nước và cảnh báo cần xử lý.
+- **Quản lý phòng trọ (Rooms):** Danh sách phòng trọ dạng lưới/bảng, bộ lọc theo trạng thái (Trống, Đang thuê, Bảo trì) và modal chi tiết phòng.
+- **Quản lý khách thuê (Tenants):** Quản lý hồ sơ người thuê, thông tin liên hệ khẩn cấp, phương tiện và lưu trữ lịch sử khách thuê cũ.
+- **Hợp đồng thuê phòng (Contracts):** Quản lý tạo hợp đồng, tiền cọc, thời hạn thuê, gia hạn và kết thúc/thanh lý hợp đồng.
+- **Ghi chỉ số điện nước (Meters):** Form nhập chỉ số điện nước hàng tháng, kiểm tra tính hợp lệ số cũ/mới và tự động tính lượng tiêu thụ.
+- **Lịch sử điện nước (Meters History):** Theo dõi và tra cứu toàn bộ lịch sử ghi chỉ số điện nước của các phòng theo mốc thời gian.
+- **Cấu hình dịch vụ (Services):** Quản lý danh mục và đơn giá các dịch vụ (Điện, Nước, Rác, Wifi, Vệ sinh, Thang máy...).
+- **Quản lý Hóa đơn (Invoices):** Danh sách hóa đơn, bộ lọc trạng thái thanh toán, lập hóa đơn tự động và xem/in hóa đơn chuẩn khổ A4.
+- **Quản lý Thanh toán (Payments):** Ghi nhận thu tiền từng phần hoặc toàn bộ, quản lý lịch sử giao dịch và hỗ trợ hoàn tác (rollback).
+- **Theo dõi Công nợ (Debts):** Thống kê tổng nợ quá hạn, hóa đơn chưa thanh toán và cảnh báo mức độ nợ theo mã màu (Vàng/Cam/Đỏ).
+- **Báo cáo & Thống kê (Reports):** Thống kê doanh thu phát sinh, thực thu (dòng tiền), cơ cấu phương thức thanh toán và xuất dữ liệu CSV.
+- **Sao lưu & Phục hồi (Backup):** Giao diện xuất/nhập tệp dữ liệu JSON an toàn (Merge/Overwrite) và khôi phục dữ liệu mẫu.
 
 ## 14. Tác giả và Phân công công việc
 
 - **Người thực hiện:** Huỳnh Quảng Lê (`devquangle`) - Dự án cá nhân
+
 - **Bảng phân công nhiệm vụ chi tiết:**
 
   | Hạng mục | Chi tiết công việc | Trạng thái |

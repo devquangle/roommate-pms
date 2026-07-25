@@ -3,9 +3,11 @@
 import { getTenantById, getCurrentRoomOfTenant, getTenantRentalHistory } from '../services/tenant-service.js';
 import { getInvoices } from '../services/invoice-service.js';
 import { getPayments } from '../services/payment-service.js';
+import { createContract } from '../services/contract-service.js';
 import { formatCurrency } from '../utils/currency-utils.js';
 import { formatDateToDisplay } from '../utils/date-utils.js';
 import { openTenantForm } from './tenant-form.js';
+import { openContractForm } from './contract-form.js';
 import { showToast } from './toast.js';
 
 /**
@@ -160,7 +162,24 @@ export function openTenantProfile(tenantId) {
   });
 
   document.getElementById('btnCreateContract')?.addEventListener('click', () => {
-    showToast('Chức năng tạo hợp đồng từ hồ sơ đang phát triển', 'info');
+    bsModal.hide();
+    setTimeout(() => {
+      openContractForm({
+        defaultTenantId: tenantId,
+        onSave: (data) => {
+          try {
+            createContract(data);
+            showToast('Tạo hợp đồng mới thành công!', 'success');
+            openTenantProfile(tenantId);
+            if (typeof window.refreshTenantsList === 'function') {
+              window.refreshTenantsList();
+            }
+          } catch (err) {
+            showToast(err.message, 'danger');
+          }
+        }
+      });
+    }, 400);
   });
 
   modalEl.addEventListener('hidden.bs.modal', () => {

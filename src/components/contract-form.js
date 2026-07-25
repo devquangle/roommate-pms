@@ -9,7 +9,7 @@ import { openTenantForm } from './tenant-form.js';
 import { hasOverlappingContract } from '../business/contract-utils.js';
 import { initSearchableSelect } from './searchable-select.js';
 
-export function openContractForm({ contract = null, onSave }) {
+export function openContractForm({ contract = null, defaultTenantId = null, defaultRoomId = null, onSave }) {
   const isEdit = !!contract;
   const title = isEdit ? 'Sửa hợp đồng' : 'Thêm hợp đồng mới';
 
@@ -58,7 +58,7 @@ export function openContractForm({ contract = null, onSave }) {
                           const nameText = r.name.startsWith('Phòng') ? r.name : 'Phòng ' + r.name;
                           const statusText = ROOM_STATUS_LABELS[r.status] || r.status;
                           return `
-                            <option value="${r.id}" ${isEdit && contract.roomId === r.id ? 'selected' : ''}>
+                            <option value="${r.id}" ${(isEdit && contract.roomId === r.id) || (!isEdit && defaultRoomId === r.id) ? 'selected' : ''}>
                               ${nameText} - ${formatCurrency(r.price)} (${statusText})
                             </option>
                           `;
@@ -90,7 +90,7 @@ export function openContractForm({ contract = null, onSave }) {
                       <select class="form-select form-select-sm" id="contractTenant" required>
                         <option value="">-- Chọn người đại diện --</option>
                         ${allTenants.map(t => `
-                          <option value="${t.id}" ${isEdit && contract.tenantId === t.id ? 'selected' : ''}>
+                          <option value="${t.id}" ${(isEdit && contract.tenantId === t.id) || (!isEdit && defaultTenantId === t.id) ? 'selected' : ''}>
                             ${t.fullName} – ${t.phone || 'N/A'}
                           </option>
                         `).join('')}

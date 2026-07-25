@@ -122,7 +122,10 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
 
   test('4. CẢNH BÁO GHI ĐÈ & HỦY BỎ: Cảnh báo xác nhận khi ghi đè dữ liệu và cho phép hủy', async ({ page }) => {
     const validBackupPath = path.resolve('tests/e2e/overwrite_test_backup.json');
-    fs.writeFileSync(validBackupPath, JSON.stringify({ rooms: [{ id: 'P907', name: 'Phòng 907', floor: 'Tầng 9', type: 'standard', price: 2000000, area: 20, status: 'available', maxTenants: 2 }] }));
+    fs.writeFileSync(validBackupPath, JSON.stringify({
+      rooms: [{ id: 'P907', name: 'Phòng 907', floor: 'Tầng 9', type: 'standard', price: 2000000, area: 20, status: 'available', maxTenants: 2 }],
+      tenants: [], contracts: [], meterReadings: [], serviceConfigs: [], invoices: [], payments: []
+    }));
 
     await page.goto('/backup');
 

@@ -19,6 +19,14 @@ export function validateBackupData(data) {
     return { valid: false, errors };
   }
 
+  // Hỗ trợ alias snake_case cho meter_readings / service_configs
+  if (data.meterReadings === undefined && Array.isArray(data.meter_readings)) {
+    data.meterReadings = data.meter_readings;
+  }
+  if (data.serviceConfigs === undefined && Array.isArray(data.service_configs)) {
+    data.serviceConfigs = data.service_configs;
+  }
+
   // Danh sách các collection bắt buộc phải có dạng Array
   const requiredArrayKeys = [
     'rooms',

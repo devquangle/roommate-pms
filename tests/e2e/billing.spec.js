@@ -124,7 +124,7 @@ test.describe('RoomMate Billing & Invoice Generation E2E', () => {
     await expect(tableBody).toContainText('Phòng 804');
 
     // Lọc theo trạng thái 'unpaid'
-    await page.locator('[data-testid="filter-invoice-status"]').selectOption('unpaid');
+    await page.locator('[data-testid="filter-status"]').selectOption('unpaid');
     await expect(tableBody).not.toContainText('Phòng 803');
     await expect(tableBody).toContainText('Phòng 804');
   });

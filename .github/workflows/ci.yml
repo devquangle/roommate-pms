@@ -19,38 +19,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js và bật cache npm để tối ưu hóa thời gian chạy
+      # 2. Setup Node.js v22 và bật cache npm
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       # 3. Cài đặt các dependencies qua npm ci
       - name: Install dependencies
         run: npm ci
 
-      # 4. Cài đặt các Playwright browsers (chỉ cài Chromium và dependencies hệ thống của nó)
+      # 4. Cài đặt các Playwright browsers (chỉ cài Chromium và dependencies hệ thống)
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
-      # 5. Chạy unit test của Vitest
-      - name: Run Unit Tests
-        run: npx vitest run tests/unit tests/services tests/models.test.js tests/manager.test.js
+      # 5. Chạy toàn bộ Unit & Business Tests
+      - name: Run Unit & Business Tests
+        run: npm run test:run
 
-      # 6. Chạy business test của Vitest
-      - name: Run Business Tests
-        run: npx vitest run tests/business
-
-      # 7. Chạy Playwright E2E tests
+      # 6. Chạy Playwright E2E Tests
       - name: Run Playwright E2E Tests
         run: npm run test:e2e
 
-      # 8. Build dự án Vite thành production bundle
+      # 7. Build dự án Vite thành production bundle
       - name: Build project
         run: npm run build
 
-      # 9. Tải lên Playwright HTML Report nếu có bất kỳ bước test nào bị thất bại
+      # 8. Tải lên Playwright HTML Report nếu có bất kỳ bước test nào thất bại
       - name: Upload Playwright Report on Failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -705,6 +705,7 @@ function handleSaveAll() {
           }
         }
         row.isSaved = true;
+        updateRowUI(row);
         saveCount++;
       } catch (err) {
         showToast(`Lỗi khi lưu phòng ${row.roomName}: ${err.message}`, 'danger');

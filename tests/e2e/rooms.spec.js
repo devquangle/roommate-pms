@@ -250,6 +250,7 @@ test.describe('RoomMate Rooms Management E2E', () => {
     await page.locator('[data-testid="input-room-max-tenants"]').fill('2');
     await page.locator('[data-testid="select-room-status"]').selectOption('maintenance');
     await page.locator('[data-testid="btn-room-save"]').click();
+    await expect(page.locator('[data-testid="room-form-modal"]')).toBeHidden();
     await expect(page.locator('[data-testid="room-row-P888"]')).toBeVisible();
 
     // 4. Tải lại trang

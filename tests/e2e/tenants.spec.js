@@ -163,6 +163,7 @@ test.describe('RoomMate Tenants Management E2E', () => {
     await page.locator('[data-testid="input-tenant-phone"]').fill('0912345678');
     await page.locator('[data-testid="input-tenant-idcard"]').fill('001199887766');
     await page.locator('[data-testid="btn-tenant-save"]').click();
+    await expect(page.locator('[data-testid="tenant-form-modal"]')).toBeHidden();
 
     // 4. Kiểm tra xuất hiện trên bảng
     await expect(page.locator('[data-testid="tenants-table-body"]')).toContainText('Trần Thị K');

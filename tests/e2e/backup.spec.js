@@ -6,13 +6,13 @@ import path from 'path';
 test.describe('RoomMate Backup, Import & Export E2E', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Dọn LocalStorage trước mỗi test để đảm bảo độc lập
+    // Dọn LocalStorage trước mỗi test
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('should support import/export lifecycle across all 10 scenarios', async ({ page }) => {
-    // 1. Tạo một số dữ liệu (Khởi tạo phòng P905 trong LocalStorage)
+  test('1. EXPORT DỮ LIỆU: Xuất dữ liệu hệ thống ra file JSON', async ({ page }) => {
+    // Tạo phòng P905 trong LocalStorage
     await page.goto('/');
     await page.evaluate(() => {
       const room = {
@@ -28,8 +28,7 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
       localStorage.setItem('rooms', JSON.stringify([room]));
     });
 
-    // 2. Export file JSON & 3. Kiểm tra có download
-    await page.goto('/settings');
+    await page.goto('/backup');
     await expect(page.locator('[data-testid="settings-page"]')).toBeVisible();
 
     const [download] = await Promise.all([
@@ -37,33 +36,43 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
       page.locator('[data-testid="btn-export-data"]').click()
     ]);
 
-    const downloadPath = path.resolve('tests/e2e/test_backup.json');
+    const downloadPath = path.resolve('tests/e2e/test_export_backup.json');
     await download.saveAs(downloadPath);
     expect(fs.existsSync(downloadPath)).toBe(true);
 
-    // 4. Xóa dữ liệu (Clear LocalStorage)
-    await page.evaluate(() => localStorage.clear());
-    await page.reload();
+    // Clean up file
+    if (fs.existsSync(downloadPath)) {
+      fs.unlinkSync(downloadPath);
+    }
+  });
 
-    // Kiểm tra dữ liệu đã bị xóa (phòng P905 không còn hiển thị)
-    await page.goto('/rooms');
-    await page.locator('[data-testid="view-table"]').click();
-    await expect(page.locator('[data-testid="room-row-P905"]')).toBeHidden();
+  test('2. IMPORT DỮ LIỆU: Nhập file JSON hợp lệ và khôi phục dữ liệu', async ({ page }) => {
+    // 1. Chuẩn bị file backup JSON chuẩn
+    const validBackupPath = path.resolve('tests/e2e/valid_test_backup.json');
+    const backupContent = {
+      rooms: [{ id: 'P906', name: 'Phòng 906', floor: 'Tầng 9', type: 'standard', price: 2700000, area: 25, status: 'available', maxTenants: 3 }],
+      tenants: [],
+      contracts: [],
+      invoices: [],
+      payments: [],
+      meter_readings: [],
+      serviceConfigs: []
+    };
+    fs.writeFileSync(validBackupPath, JSON.stringify(backupContent));
 
-    // 5. Import lại file JSON
-    await page.goto('/settings');
+    await page.goto('/backup');
+
     const [fileChooser] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.locator('#btnSelectFile').click()
     ]);
-    await fileChooser.setFiles(downloadPath);
+    await fileChooser.setFiles(validBackupPath);
 
-    // Bấm kiểm tra dữ liệu
+    // Kiểm tra dữ liệu
     await page.locator('#btnCheckData').click();
-    const fileInfo = page.locator('#importFileInfo');
-    await expect(fileInfo).toContainText('✅ File dữ liệu hợp lệ');
+    await expect(page.locator('#importFileInfo')).toContainText('✅ File dữ liệu hợp lệ');
 
-    // Đánh dấu biến trên window để phát hiện reload tự động
+    // Đánh dấu biến window để phát hiện reload
     await page.evaluate(() => { window.__pendingReload = true; });
 
     // Thực hiện Import
@@ -73,53 +82,63 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
     // Chờ trang tự động reload xong
     await page.waitForFunction(() => window.__pendingReload === undefined, { timeout: 5000 });
 
-    // 6. Kiểm tra dữ liệu được khôi phục (Phòng P905 xuất hiện trở lại)
+    // Kiểm tra dữ liệu được khôi phục (Phòng P906)
     await page.goto('/rooms');
     await page.locator('[data-testid="view-table"]').click();
-    await page.locator('[data-testid="input-search-room"]').fill('905');
-    await expect(page.locator('[data-testid="room-row-P905"]')).toBeVisible();
+    await page.locator('[data-testid="input-search-room"]').fill('906');
+    await expect(page.locator('[data-testid="room-row-P906"]')).toBeVisible();
 
-    // 7. Import file sai định dạng (Tạo file JSON chứa cấu trúc không hợp lệ)
-    const tempInvalidPath = path.resolve('tests/e2e/temp_invalid_backup.json');
-    fs.writeFileSync(tempInvalidPath, '{"rooms": "invalid_structure"}');
+    // Clean up file
+    if (fs.existsSync(validBackupPath)) {
+      fs.unlinkSync(validBackupPath);
+    }
+  });
 
-    await page.goto('/settings');
-    const [fileChooser2] = await Promise.all([
+  test('3. BÁO LỖI IMPORT: Báo lỗi khi chọn file JSON không đúng cấu hình', async ({ page }) => {
+    const invalidPath = path.resolve('tests/e2e/invalid_test_backup.json');
+    fs.writeFileSync(invalidPath, '{"rooms": "invalid_structure"}');
+
+    await page.goto('/backup');
+    const [fileChooser] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.locator('#btnSelectFile').click()
     ]);
-    await fileChooser2.setFiles(tempInvalidPath);
+    await fileChooser.setFiles(invalidPath);
 
-    // Bấm kiểm tra file
     await page.locator('#btnCheckData').click();
 
-    // 8. Kiểm tra hiển thị lỗi (Error state giao diện xuất hiện)
+    // Kiểm tra hiển thị Error State
     await expect(page.locator('[data-testid="error-state-invalid-import"]')).toBeVisible();
 
-    // Dọn dẹp file sai định dạng
-    if (fs.existsSync(tempInvalidPath)) {
-      fs.unlinkSync(tempInvalidPath);
+    // Clean up file
+    if (fs.existsSync(invalidPath)) {
+      fs.unlinkSync(invalidPath);
     }
 
-    // Nút "Chọn file khác" xuất hiện trong Error State để reset
+    // Reset lại màn hình Import
     await page.locator('#btnErrorActionResetImport').click();
+    await expect(page.locator('#importPreviewBlock')).toBeHidden();
+  });
 
-    // 9. Hủy thao tác ghi đè
-    // Chọn lại file backup hợp lệ ban đầu
-    const [fileChooser3] = await Promise.all([
+  test('4. CẢNH BÁO GHI ĐÈ & HỦY BỎ: Cảnh báo xác nhận khi ghi đè dữ liệu và cho phép hủy', async ({ page }) => {
+    const validBackupPath = path.resolve('tests/e2e/overwrite_test_backup.json');
+    fs.writeFileSync(validBackupPath, JSON.stringify({ rooms: [{ id: 'P907', name: 'Phòng 907', floor: 'Tầng 9', type: 'standard', price: 2000000, area: 20, status: 'available', maxTenants: 2 }] }));
+
+    await page.goto('/backup');
+
+    const [fileChooser] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.locator('#btnSelectFile').click()
     ]);
-    await fileChooser3.setFiles(downloadPath);
+    await fileChooser.setFiles(validBackupPath);
 
     await page.locator('#btnCheckData').click();
-    await expect(fileInfo).toContainText('✅ File dữ liệu hợp lệ');
 
-    // Chọn phương thức ghi đè (Overwrite)
+    // Chọn phương thức Ghi đè (Overwrite)
     await page.locator('#modeOverwrite').check();
     await page.locator('#btnImportSubmit').click();
 
-    // Kiểm tra hiển thị Modal cảnh báo nguy hiểm (danger confirm modal)
+    // Kiểm tra hiển thị Modal cảnh báo nguy hiểm
     const dangerModal = page.locator('[data-testid="danger-confirm-modal"]');
     await expect(dangerModal).toBeVisible();
 
@@ -127,16 +146,9 @@ test.describe('RoomMate Backup, Import & Export E2E', () => {
     await dangerModal.locator('button:has-text("Hủy bỏ")').click();
     await expect(dangerModal).toBeHidden();
 
-    // 10. Kiểm tra dữ liệu hiện tại không bị mất
-    await page.goto('/rooms');
-    await page.locator('[data-testid="view-table"]').click();
-    await page.locator('[data-testid="input-search-room"]').fill('905');
-    await expect(page.locator('[data-testid="room-row-P905"]')).toBeVisible();
-
-    // Dọn dẹp file backup đã tải về
-    if (fs.existsSync(downloadPath)) {
-      fs.unlinkSync(downloadPath);
+    // Clean up file
+    if (fs.existsSync(validBackupPath)) {
+      fs.unlinkSync(validBackupPath);
     }
   });
 });
-

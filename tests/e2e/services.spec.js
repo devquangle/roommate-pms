@@ -204,6 +204,7 @@ test.describe('RoomMate Service Configurations E2E', () => {
 
     await page.locator('[data-testid="input-unit-price"]').fill('60000');
     await page.locator('[data-testid="btn-service-save"]').click();
+    await expect(page.locator('[data-testid="service-config-form-modal"]')).toBeHidden();
 
     // Kiểm tra đơn giá mới cập nhật (60.000 ₫)
     await expect(tableBody).toContainText('60.000');

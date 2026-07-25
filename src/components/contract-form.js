@@ -296,11 +296,14 @@ export function openContractForm({ contract = null, defaultTenantId = null, defa
         riStatus.textContent = 'Đang thuê';
       }
 
-      if (!isEdit && !inputRoomPrice.value) {
+      if (!isEdit) {
         inputRoomPrice.value = room.price;
       }
     } else {
       roomInfoCard.classList.add('d-none');
+      if (!isEdit) {
+        inputRoomPrice.value = '';
+      }
     }
     renderCoTenantList();
     updateSummary();

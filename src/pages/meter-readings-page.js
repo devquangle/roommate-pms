@@ -228,7 +228,9 @@ function validateAndCalculateRow(row) {
   const elecNew = row.electricityNew;
   if (elecNew !== '' && !isNaN(elecNew) && elecNew !== null) {
     const val = Number(elecNew);
-    if (val < row.electricityOld) {
+    if (val < 0) {
+      row.error = 'Chỉ số điện mới không được âm!';
+    } else if (val < row.electricityOld) {
       row.error = 'Điện mới nhỏ hơn điện cũ!';
     } else {
       row.electricityUsage = val - row.electricityOld;
@@ -241,7 +243,9 @@ function validateAndCalculateRow(row) {
   const waterNew = row.waterNew;
   if (waterNew !== '' && !isNaN(waterNew) && waterNew !== null) {
     const val = Number(waterNew);
-    if (val < row.waterOld) {
+    if (val < 0) {
+      row.error = row.error ? row.error + ' | Chỉ số nước mới không được âm!' : 'Chỉ số nước mới không được âm!';
+    } else if (val < row.waterOld) {
       row.error = row.error ? row.error + ' | Nước mới nhỏ hơn nước cũ!' : 'Nước mới nhỏ hơn nước cũ!';
     } else {
       row.waterUsage = val - row.waterOld;
@@ -250,7 +254,7 @@ function validateAndCalculateRow(row) {
     row.waterUsage = 0;
   }
 
-  // 3. Kiểm tra bất thường so với tháng liền kề trước (nếu không có lỗi trị nhỏ hơn)
+  // 3. Kiểm tra bất thường so với tháng liền kề trước (nếu không có lỗi)
   if (!row.error) {
     const prevReading = getPreviousReading(row.roomId, currentMonth, currentYear);
     if (prevReading) {

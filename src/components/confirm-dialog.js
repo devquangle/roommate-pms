@@ -26,7 +26,7 @@ export function showConfirmDialog(title, message, onConfirm) {
   const modalEl = document.getElementById('confirmModal');
   
   if (window.bootstrap && window.bootstrap.Modal) {
-    const bootstrapModal = new window.bootstrap.Modal(modalEl);
+    const bootstrapModal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
     
     // Bắt sự kiện click nút OK
     document.getElementById('btn-confirm-ok').addEventListener('click', () => {
@@ -38,6 +38,9 @@ export function showConfirmDialog(title, message, onConfirm) {
 
     // Tự động xóa DOM khi tắt modal để tránh rác
     modalEl.addEventListener('hidden.bs.modal', () => {
+      try {
+        bootstrapModal.dispose();
+      } catch (_) {}
       container.innerHTML = '';
     });
 
